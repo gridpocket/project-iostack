@@ -1,5 +1,2 @@
-# installation
-	npm install
-# execution
-	./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-temp] [-location]
-	
+# IOStack
+IOStack was founded by the European Commission. You can find more information on <a href="http://www.iostack.eu/">the official website</a>
