@@ -1,6 +1,7 @@
 # Meter_gen
-This application generates synthetic datasets, similar to smart meter readings.
+This application generates synthetic datasets similar to the utility smart meters logs.
 All data (indexes, temperature, locations) is random. 
+
 This application accepts following paramenters :
 - number of meters to be simulated
 - period of simulation from - to
