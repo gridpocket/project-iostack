@@ -5,9 +5,9 @@ Please visit the page of <a href="http://www.iostack.eu/">the IOStack project</a
 
 
 
-# Apache Spark
+## Apache Spark
 
-## Installation of environment
+### Installation of environment
 1) Create an ubuntu vagrant VM
 2) ssh
 3) Get a prebuilt install 
@@ -15,7 +15,7 @@ Please visit the page of <a href="http://www.iostack.eu/">the IOStack project</a
 4) 
 
 
-# MongoDB
+## MongoDB
 Installation of MongDB 3.2
 	sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
 	echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
