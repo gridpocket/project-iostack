@@ -6,7 +6,7 @@
 	Author : Guillaume PILOT 
 
 	Usage : 
-	./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-temp] [-location]
+	./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-separateFile] [-temp] [-location]
  */
 
 //Library
@@ -17,7 +17,8 @@ var locations = require('./locations.json');
 //Variables
 var MAX_RANDOM_INDEX = 1000;
 var MAX_RANDOM_TEMP = 35;
-var FILENAME = "./out/meter_gen-"+moment().format('YYYYMMDDHHmmss')+".csv";
+var OUTFOLDER = "./out/";
+var FILENAME;
 
 //Args variables
 var myArgs = process.argv.slice(2);
@@ -26,8 +27,16 @@ var NB_METERS = myArgs[0] || 10;
 var FROM = myArgs[1] || '01/01/2016';
 var TO = myArgs[2] || '01/01/2016';
 var MINUTES_INTERVAL = myArgs[3] || 10;
-var WANT_TEMP = myArgs[4];
-var WANT_LOCATION = myArgs[5];
+
+var WANT_SEPARATEFILE;// = myArgs[4];
+var WANT_TEMP;// = myArgs[5];
+var WANT_LOCATION;// = myArgs[6];
+
+for (var i = 4; i < myArgs.length; i++) {
+	if(myArgs[i]==="-separateFile") WANT_SEPARATEFILE=myArgs[i];
+	if(myArgs[i]==="-temp") WANT_TEMP=myArgs[i];
+	if(myArgs[i]==="-location") WANT_LOCATION=myArgs[i];
+}
 
 console.log(myArgs);
 console.log('Generate', NB_METERS, 'meters data between', FROM, 'and', TO, 'with interval of', MINUTES_INTERVAL, 'minutes.');
@@ -40,6 +49,14 @@ for (var i = 1; i <= NB_METERS; i++) {
 	meter.vid = 'METER'+id;
 	meter.index = 0;
 	meters.push(meter);
+}
+
+//Create folder if want separate files
+if(WANT_SEPARATEFILE){
+	OUTFOLDER=OUTFOLDER+moment().format('YYYYMMDDHHmmss')+'/';
+	fs.mkdirSync(OUTFOLDER);
+}else{
+	FILENAME = OUTFOLDER+"meter_gen-"+moment().format('YYYYMMDDHHmmss')+".csv";
 }
 
 //Generate CSV file
@@ -58,6 +75,9 @@ for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MI
 			line.push(meter.latitude);
 			line.push(meter.longitude);
 		}
+		if(WANT_SEPARATEFILE) FILENAME=OUTFOLDER+meter.vid+'.csv';
+		
+
 		fs.appendFileSync(FILENAME, line.join(',').toString() + "\n");
 		//console.log(line);
 	}
