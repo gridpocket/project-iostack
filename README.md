@@ -1,5 +1,10 @@
-# IOStack
-IOStack was founded by the European Commission. You can find more information on <a href="http://www.iostack.eu/">the official website</a>
+<<<<<<< HEAD
+# MeterGen - IOStack
+This software has been developed as part of the research projet IOStack and it was co-financed by the European Commission whithin the Horizon 2020 program. 
+
+Please visit the page of <a href="http://www.iostack.eu/">the IOStack project</a> for more details.
+
+
 
 # Apache Spark
 
@@ -24,4 +29,3 @@ Import meter csv file into meter collection
 Run the test
 	mongo simu
 	db.meter.find({index:{$lt:1000}})
-	
