@@ -35,3 +35,5 @@ This meter generator use a locations.json file to add city information. This loc
 
 The meter_gen appliation is open source, free to modify and user for all purposes.
 
+Contributors : Guillaume Pilot, Filip Gluszak - GRIDPOCKET SAS - IOStack project 2016
+
