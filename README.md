@@ -1,13 +1,12 @@
-# MeterGen - IOStack
+# meter_gen - IOStack
 This software has been developed as part of the research projet IOStack and it was co-financed by the European Commission whithin the Horizon 2020 program. 
 
 Please visit the page of <a href="http://www.iostack.eu/">the IOStack project</a> for more details.
 
 
 
-## Apache Spark
-
-### Installation of environment
+### Notes on using meter_gen with Apache Spark
+Installation of environment
 1) Create an ubuntu vagrant VM
 2) ssh
 3) Get a prebuilt install 
@@ -15,7 +14,7 @@ Please visit the page of <a href="http://www.iostack.eu/">the IOStack project</a
 4) 
 
 
-## MongoDB
+### Notes on Using meter_gen with MongoDB
 Installation of MongDB 3.2
 	sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
 	echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
