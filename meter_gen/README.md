@@ -8,6 +8,7 @@ This application accepts following paramenters :
 - interval betwean measuring points
 - availability of external temperature
 - availability of location data
+- separation of files for each user
 
 The result files are location in /out 
 
@@ -17,7 +18,7 @@ This is a Nodejs script. You need to install nodejs (using nave for example) and
 # Installation
 	npm install
 # Execution
-	./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-temp] [-location]
+	./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-temp] [-location] [-separateFile]
 
 example : 
 	./meter_gen.js 5 '01/01/2015' '31/12/2015' 10 -temp -location
