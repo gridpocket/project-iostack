@@ -18,11 +18,12 @@ This is a Nodejs script. You need to install nodejs (using nave for example) and
 # Installation
 	npm install
 # Execution
-	./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-temp] [-location] [-separateFile]
+	./meter_gen [# of users] [period_from] [period_to] [interval_minutes] [-temp] [-location] [-separateFile]
 
-example : 
+#Example : 
 	./meter_gen.js 5 '01/01/2015' '31/12/2015' 10 -temp -location
-eaxmple results file content:
+	
+#Exmple results file content:
 	2015-01-01T00:00:00+01:00,135,METER000001,11.33,New York,40.717040,-73.98700
 	2015-01-01T00:00:00+01:00,871,METER000002,30.15,New York,40.732509,-73.98935
 	2015-01-01T00:00:00+01:00,361,METER000003,2.92,New Jersey,40.699226,-74.04118
