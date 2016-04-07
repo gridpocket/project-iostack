@@ -45,7 +45,7 @@ console.log('Generate', NB_METERS, 'meters data between', FROM, 'and', TO, 'with
 var meters = [];
 for (var i = 1; i <= NB_METERS; i++) {
 	var id = ('00000' + i).slice(-6);
-	var meter = locations[i];
+	var meter = locations[Math.floor(Math.random() * (33178 - 0) + 0)];
 	meter.vid = 'METER'+id;
 	meter.index = 0;
 	meters.push(meter);
@@ -71,7 +71,9 @@ for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MI
 		line.push(meter.vid);
 		if(WANT_TEMP) line.push(parseFloat((Math.random() * MAX_RANDOM_TEMP*100)/100).toFixed(2));
 		if(WANT_LOCATION){
+			line.push(meter.city);
 			line.push(meter.state);
+			line.push(meter.state_abbr);
 			line.push(meter.latitude);
 			line.push(meter.longitude);
 		}
