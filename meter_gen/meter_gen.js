@@ -44,11 +44,35 @@ for (var i = 4; i < myArgs.length; i++) {
 console.log(myArgs);
 console.log('Generate', NB_METERS, 'meters data between', FROM, 'and', TO, 'with interval of', MINUTES_INTERVAL, 'minutes.');
 
+// Function to Shuffle the locations[] 
+function shuffle(array) {
+    var counter = array.length;
+    // While there are elements in the array
+    while (counter > 0) {
+        // Pick a random index
+        var index = Math.floor(Math.random() * counter);
+        // Decrease counter by 1
+        counter--;
+        // And swap the last element with it
+        var temp = array[counter];
+        array[counter] = array[index];
+        array[index] = temp;
+    }
+    return array;
+}
+// variable to hold the shuffle index 
+var a= [];
+for (var i=0;i<=locations.length-1;i++) {
+    a[i]=i;
+}
+
+a = shuffle(a);
+
 //Generate meter informations with location and meterID
 var meters = [];
 for (var i = 1; i <= NB_METERS; i++) {
 	var id = ('00000' + i).slice(-6);
-	var meter = locations[i-1];
+	var meter = locations[a[i]];
 	meter.vid = 'METER'+id;
 	meter.conso = 0;
 	meter.highcost = 0;
@@ -68,7 +92,6 @@ if(WANT_SEPARATEFILE){
 for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MINUTES_INTERVAL, 'minutes')) {
 	for (var i = 0; i < meters.length; i++) {
 		var meter = meters[i];
-
 		// Choose the Consumption depend on the situation
 		if ((d.format('MM')<11)&&(d.format('MM')>03)) { // Hot season
 			if ((d.format('dddd') != "Sunday")&&(d.format('dddd') != "Saturday")) { // Workind day
