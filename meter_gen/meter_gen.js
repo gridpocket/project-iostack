@@ -107,7 +107,7 @@ for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MI
 
 		var line = [];
 
-		line.push(d.format('DD/MM/YYYY HH dddd'));
+		line.push(d.format());
 		line.push(meter.conso);
 		line.push(0.001*meter.highcost); // convert to KWh
 		line.push(0.001*meter.lowcost)
