@@ -48,7 +48,7 @@ console.log('Generate', NB_METERS, 'meters data between', FROM, 'and', TO, 'with
 var meters = [];
 for (var i = 1; i <= NB_METERS; i++) {
 	var id = ('00000' + i).slice(-6);
-	var meter = locations[Math.floor(Math.random() * (33178 - 0) + 0)];
+	var meter = locations[i-1];
 	meter.vid = 'METER'+id;
 	meter.conso = 0;
 	meter.highcost = 0;
