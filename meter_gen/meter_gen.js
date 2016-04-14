@@ -3,7 +3,7 @@
 /*
   Meter csv data generator
   GridPocket Copyrights 2016, IOSTACK project www.iostack.eu
-  Authors : Guillaume PILOT, Dien Hoa TRUONG GridPocket SAS
+  Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY GridPocket SAS
 
   Usage : 
   ./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-separateFile] [-temp] [-location]
@@ -14,7 +14,8 @@
 //Library
 var moment = require('moment');
 var fs = require('fs');
-var locations = require('./locations.json');
+var locations = require('./location.json');
+var iso3 = require('./iso3.json')
 var rand  =  require('randgen');
 
 //Variables
@@ -67,6 +68,10 @@ for (var i=0;i<=locations.length-1;i++) {
 }
 
 a = shuffle(a);
+
+for (var i = 0; i < locations.length; i++) {
+	locations[i].country = iso3[0][locations[i].country]
+}
 
 //Generate meter informations with location and meterID
 var meters = [];
@@ -139,10 +144,10 @@ for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MI
 		if(WANT_TEMP) line.push(parseFloat((Math.random() * MAX_RANDOM_TEMP*100)/100).toFixed(2));
 		if(WANT_LOCATION){
 			line.push(meter.city);
-			line.push(meter.state);
-			line.push(meter.state_abbr);
-			line.push(meter.latitude);
-			line.push(meter.longitude);
+			line.push(meter.country);
+			line.push(meter.region);
+			line.push(meter.lat);
+			line.push(meter.long);
 		}
 		if(WANT_SEPARATEFILE) FILENAME=OUTFOLDER+meter.vid+'.csv';
 		fs.appendFileSync(FILENAME, line.join(',').toString() + "\n");
