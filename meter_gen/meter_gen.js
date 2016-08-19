@@ -94,6 +94,7 @@ if(WANT_SEPARATEFILE){
 }
 
 //Generate CSV file
+fs.appendFileSync(FILENAME, "date,index,sumHC,sumHP,vid,city,state,state_abbr,lat,long\n");
 for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MINUTES_INTERVAL, 'minutes')) {
 	for (var i = 0; i < meters.length; i++) {
 		var meter = meters[i];
