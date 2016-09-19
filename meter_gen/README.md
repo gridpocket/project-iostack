@@ -33,7 +33,7 @@ This is a Nodejs script. You need to install nodejs (using nave for example) and
 # Information
 This meter generator use a locations.json file to add city information. This locations.json file is a copy of another public Github repository on MIT Licence (<a href="https://github.com/sjlu/cities/">src</a>)
 
-The meter_gen appliation is open source, free to modify and user for all purposes.
+The meter_gen appliation is open source, free to modify and to be used for all non-commercial and commercial purposes.
 
 Contributors : Guillaume Pilot, Filip Gluszak - GRIDPOCKET SAS - IOStack project 2016
 
