@@ -3,7 +3,7 @@
 /*
   Meter csv data generator
   GridPocket Copyrights 2016, IOSTACK project www.iostack.eu
-  Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES GridPocket SAS
+  Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES GridPocket SAS 
 
   Usage : 
   ./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-separateFile] [-temp] [-location]
