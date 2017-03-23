@@ -5,7 +5,8 @@ All data (indexes, temperature, locations) is random.
 This application accepts following paramenters :
 - number of meters to be simulated
 - period of simulation from - to
-- interval betwean measuring points
+- interval between measuring points
+- type of consumption
 - availability of external temperature
 - availability of location data
 - separation of files for each user
@@ -18,22 +19,22 @@ This is a Nodejs script. You need to install nodejs (using nave for example) and
 # Installation
 	npm install
 # Execution
-	./meter_gen [# of users] [period_from] [period_to] [interval_minutes] [-temp] [-location] [-separateFile]
+	./meter_gen [# of users] [period_from] [period_to] [interval_minutes] [type_consumption] [-temp] [-location] [-separateFile]
 
 #Example : 
-	./meter_gen.js 5 '01/01/2015' '31/12/2015' 10 -temp -location
+	./meter_gen.js 5 '01/01/2015' '31/12/2015' 10 gas -temp -location
 	
 #Exmple results file content:
-	2015-01-01T00:00:00+01:00,135,METER000001,11.33,New York,40.717040,-73.98700
-	2015-01-01T00:00:00+01:00,871,METER000002,30.15,New York,40.732509,-73.98935
-	2015-01-01T00:00:00+01:00,361,METER000003,2.92,New Jersey,40.699226,-74.04118
-	2015-01-01T00:00:00+01:00,359,METER000004,0.14,New York,40.706019,-74.00858
+	2015-01-01T00:00:00+00:00,11.186954289365412,0.011186954289365413,0,gas,METER000001,15.66,Montaigu,49.533108,3.833082,732,100m²
+	2015-01-01T00:00:00+00:00,18.920511040566424,0.018920511040566426,0,gas,METER000002,1.25,Belvézet,44.548239,3.753488,92,70m²
+	2015-01-01T00:00:00+00:00,4.124213316144373,0.0041242133161443735,0,gas,METER000003,18.68,Montaigu,49.532154,3.832823,732,20m²
+	2015-01-01T00:00:00+00:00,12.960750499352578,0.012960750499352578,0,gas,METER000004,13.72,Trémoulet,43.165460,1.715176,101,50m²
 	...
 	
 # Information
-This meter generator use a locations.json file to add city information. This locations.json file is a copy of another public Github repository on MIT Licence (<a href="https://github.com/sjlu/cities/">src</a>)
+This meter generator use a locations.json file to add city information. This locations.json file is a copy of data base from a french site? (<a href="http://sql.sh/736-base-donnees-villes-francaises">src</a>)
 
-The meter_gen appliation is open source, free to modify and to be used for all non-commercial and commercial purposes.
+The meter_gen application is open source, free to modify and to be used for all non-commercial and commercial purposes.
 
-Contributors : Guillaume Pilot, Filip Gluszak - GRIDPOCKET SAS - IOStack project 2016
+Contributors : Guillaume Pilot, Filip Gluszak César Carles - GRIDPOCKET SAS - IOStack project 2016
 
