@@ -18,7 +18,7 @@ This is a Nodejs script. You need to install nodejs (using nave for example) and
 
 # Installation
 	npm install
-# Execution
+# Execution	
 	./meter_gen [# of users] [period_from] [period_to] [interval_minutes] [type_consumption] [-temp] [-location] [-separateFile]
 
 #Example : 
@@ -32,9 +32,19 @@ This is a Nodejs script. You need to install nodejs (using nave for example) and
 	...
 	
 # Information
-This meter generator use a locations.json file to add city information. This locations.json file is a copy of data base from a french site? (<a href="http://sql.sh/736-base-donnees-villes-francaises">src</a>)
+This meter generator use a locations.json file to add city information. This locations.json file is a copy of data base from a french site (<a href="http://sql.sh/736-base-donnees-villes-francaises">src</a>)
+Number of users: 1 -> 1000000
+Type of consumption: gas / electric / mixed
+
+Consumption is calculated by differents parameters:
+	-Time (4 possibilities (00h -> 06h, 06h -> 9h, 9h > 17h, 17h -> 00h))
+	-Days (2 possibilities (working day or weekend))
+	-Season (2 possibilities (Hot season, Cold Season))
+	-Size of accommodations (4 possibilites (20m², 50m², 70m², 100m²))
+	-Type of Consumption (2 possibilities (Gas or Electric)) 
+
 
 The meter_gen application is open source, free to modify and to be used for all non-commercial and commercial purposes.
 
-Contributors : Guillaume Pilot, Filip Gluszak César Carles - GRIDPOCKET SAS - IOStack project 2016
+Contributors : Guillaume Pilot, Filip Gluszak, César Carles - GRIDPOCKET SAS - IOStack project 2016
 
