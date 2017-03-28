@@ -5,7 +5,8 @@
   "main": "meter_gen.js",
   "dependencies": {
     "moment": "^2.11.1",
-    "randgen": "^0.1.0"
+    "randgen": "^0.1.0",
+    "type-of-is": "^3.4.0"
   },
   "devDependencies": {},
   "scripts": {
