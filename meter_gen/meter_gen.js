@@ -81,7 +81,6 @@ for (var i = 5; i < myArgs.length; i++) {
     if (myArgs[i] === "-separateFile") WANT_SEPARATEFILE = myArgs[i];
     if (myArgs[i] === "-temp") WANT_TEMP = myArgs[i];
     if (myArgs[i] === "-location") WANT_LOCATION = myArgs[i];
-    if (myArgs[i] === "-house") WANT_HOUSE = myArgs[i];
 }
 
 if (STATUS == 5) {
@@ -185,10 +184,15 @@ if (WANT_SEPARATEFILE) {
 FILENAME = OUTFOLDER + "meter_gen-" + moment().format('YYYYMMDDHHmmss') + ".csv";
 INTERVAL_CALCULED = 1440 / MINUTES_INTERVAL
 //Generate CSV file
-fs.appendFileSync(FILENAME, "date,index,sumHC,sumHP,type,vid,city,lat,long,density,size\n");
 
+firstLine = "date,index,sumHC,sumHP,type,vid,size";
+if(WANT_TEMP)(firstLine += ",temp");
+if(WANT_LOCATION)(firstLine += ",city,lat,long,density");
+firstLine += "\n"
 
-DataConsumption = 
+fs.appendFileSync(FILENAME, firstLine);
+
+DataConsumption =   
     {
 
         ColdSeason: 
@@ -966,6 +970,7 @@ for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MI
         var id = ('00000' + i).slice(-6);
         meter.vid = 'METER' + id;
         line.push(meter.vid);
+        line.push(meter.houseType + "m²");
         if (WANT_TEMP)
             line.push((Math.random() * MAX_RANDOM_TEMP).toFixed(2));
 
@@ -979,7 +984,6 @@ for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MI
             line.push(meter.longitude.toFixed(6));
             line.push(meter.population);
         }
-        line.push(meter.houseType + "m²");
 
         if (WANT_SEPARATEFILE)
             FILENAME = OUTFOLDER + meter.vid + '.csv';
