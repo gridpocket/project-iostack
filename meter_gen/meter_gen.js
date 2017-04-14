@@ -1,997 +1,548 @@
 #!/usr/bin/env node
 
-/*
-  Meter csv data generator
-  GridPocket Copyrights 2016, IOSTACK project www.iostack.eu
-  Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES GridPocket SAS
+/**
+ * 		Meter csv data generator
+ * 
+ * GridPocket Copyrights 2016
+ * IOSTACK project www.iostack.eu
+ * 
+ * @Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES, Nathaël Noguès 
+ * 		GridPocket SAS
+ *
+ * @Last Modified by:   Nathaël Noguès
+ * @Last Modified time: 2017-04-14
+ *
+ * Usage : 
+ * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gaz, 'electric' or 'mixed')] (-separateFile) (-temp) (-location)
+ * 
+ * Example usage: 
+ * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFile -location
+**/
 
-  Usage : 
-  ./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-separateFile] [-temp] [-location]
- */
+/*jshint esversion: 6 */
 
-// Example Argument: ./meter_gen.js 3 '30/01/2015' '31/01/2015' 10 -separateFile
-
-//Library
+//
+// Libraries and external files
 var moment = require('moment');
 var fs = require('fs');
-var locations = require('./locations.json');
-var iso3 = require('./iso3.json')
 var rand = require('randgen');
 var extend = require('util')._extend;
 var Type = require('type-of-is');
 
-dateStart = moment.now()
+var locations = require('./locations.json');
+var iso3 = require('./iso3.json');
+// Libraries and external files
+// 
 
-//Variables
-var MAX_RANDOM_INDEX = 1000;
-var MAX_RANDOM_TEMP = 35;
-var TOTAL_DENSITY = 486;
-var TOTAL_POPULATION = 64886015;
-var OUTFOLDER = "./out/";
-var STATUS = 0;
-var FILENAME;
+// For monitoring time
+const TIME_BEGIN = moment.now();
 
-//Args variables
-var myArgs = process.argv.slice(2);
+//
+// Defining constants
+const MAX_RANDOM_INDEX = 1000;
+const MAX_RANDOM_TEMP = 35;
+const TOTAL_DENSITY = 486;
+const TOTAL_POPULATION = 64886015;
+var outFolder = './out/';
+// Defining constants
+//
 
+//
+// Parsing arguments
+var args = process.argv.slice(2);
 
-Type(parseInt(myArgs[0]))
-if (parseInt(myArgs[0]) <= 0) {
-    console.log("ERROR: number of meters should be between 1 and 1 millions");
-} else {
-    var NB_METERS = myArgs[0] || 10;
-    STATUS += 1;
+if(args < 5) {
+	console.log('Usage: \n'+
+				'	node meter_gen [meters number (1 to 1M)] '+
+								  "[date begin 'yyyy/mm/dd'] "+
+								  "[date end 'yyyy/mm/dd'] "+
+								  '[data interval (in minutes)] '+
+								  "[data type ('gaz, 'electric' or 'mixed')] "+
+								  '(-separateFile) '+
+								  '(-temp) '+
+								  '(-location)');
+	process.exit(-1); // not enough arguments
 }
 
-testDateFrom = moment(myArgs[1], "DD/MM/YYYY", true).isValid()
-if (testDateFrom == false) {
-    console.log("ERROR: check your date \"from\"")
-} else {
-    var FROM = myArgs[1] || '01/01/2016';
-    STATUS += 1;
+var errNb = 0;
+
+let arg = args.shift(); // arg1
+const NB_METERS = arg|0;
+if(NB_METERS <= 0 || NB_METERS > 1000000) {
+    console.log('ERROR: Number of meters should be between 1 and 1 millions (you put', arg+')');
+    errNb++;
 }
 
-testDateTo = moment(myArgs[2], "DD/MM/YYYY", true).isValid()
-if (testDateTo == false) {
-    console.log("ERROR: check your date \"to\"")
-} else {
-    var TO = myArgs[2] || '01/01/2016';
-    STATUS += 1;
+arg = args.shift(); // arg2
+const FROM = moment(arg, 'YYYY/MM/DD');
+if(!moment(arg, 'YYYY/MM/DD', true).isValid()) {
+    console.log('ERROR: Check your begining date, should be in format yyyy/mm/dd (you put', arg+')');
+    errNb++;
 }
 
-if (parseInt(myArgs[3]) <= 0) {
-    console.log("ERROR: interval of minute should be more than 0");
-} else {
-    var MINUTES_INTERVAL = myArgs[3] || 60;
-    STATUS += 1;
+arg = args.shift(); // arg3
+const TO = moment(arg, 'YYYY/MM/DD');
+if(!moment(myArgs[2], 'YYYY/MM/DD', true).isValid()) {
+    console.log('ERROR: Check your end date, should be in format yyyy/mm/dd (you put', arg+')');
+    errNb++;
 }
 
-if (myArgs[4] != "electric" && myArgs[4] != "gas" && myArgs[4] != "mixed") {
-    console.log("ERROR: choose between electric or gas")
-} else {
-    var TYPE = myArgs[4];
-    STATUS += 1;
+arg = args.shift(); // arg4
+const MINUTES_INTERVAL = arg|0;
+if(MINUTES_INTERVAL <= 0) {
+    console.log('ERROR: interval of minute should be a positive integer (you put', arg+')');
+    errNb++;
 }
 
-var WANT_SEPARATEFILE; // = myArgs[5];
-var WANT_TEMP; // = myArgs[6];
-var WANT_LOCATION; // = myArgs[7];
-
-for (var i = 5; i < myArgs.length; i++) {
-    if (myArgs[i] === "-separateFile") WANT_SEPARATEFILE = myArgs[i];
-    if (myArgs[i] === "-temp") WANT_TEMP = myArgs[i];
-    if (myArgs[i] === "-location") WANT_LOCATION = myArgs[i];
+arg = args.shift(); // arg5
+const TYPE = arg;
+if(TYPE !== 'electric' && TYPE !== 'gas' && TYPE !== 'mixed') {
+    console.log("ERROR: choose between 'electric', 'gas' or 'mixed' (you put", arg+')');
+    errNb++;
 }
 
-if (STATUS == 5) {
-    console.log('Generate', NB_METERS, 'meters data between', FROM, 'and', TO, 'with interval of', MINUTES_INTERVAL, 'minutes', "with", TYPE, ".");
-}
-// Function to Shuffle the locations[] 
-function shuffle(array) {
-    var counter = array.length;
-    // While there are elements in the array
-    while (counter > 0) {
-        // Pick a random index
-        var index = Math.floor(Math.random() * counter);
-        // Decrease counter by 1
-        counter--;
-        // And swap the last element with it
-        var temp = array[counter];
-        array[counter] = array[index];
-        array[index] = temp;
-    }
-    return array;
-}
-// variable to hold the shuffle index 
-var a = [];
-var totalDensity = 0;
-for (var i = 0; i <= locations.length - 1; i++) {
-    a[i] = i;
+var WANT_SEPARATEFILE = false;
+var WANT_TEMP = false;
+var WANT_LOCATION = false;
+
+while(args.length > 0) {
+	arg = args.shift();
+	switch(arg) {
+		case '-separateFile':
+			WANT_SEPARATEFILE = true;
+			break;
+		case '-temp':
+			WANT_TEMP = true;
+			break;
+		case '-location':
+			WANT_LOCATION = true;
+			break;
+		default:
+			console.log('ERROR: Unknown argument:', arg);
+			errNb++;
+	}
 }
 
-
-a = shuffle(a);
-
-
-
-//Generate meter informations with location and meterID
-var totaldensity = 0
-var modulo = 0;
-var cityNb = locations.length;
-var meters = [];
-var rest = 0;
-var elapsedTime = 0;
-var startTime = new Date().getTime();
-for (var i = 0; i < NB_METERS; i++) {
-    modulo = i % cityNb;
-    totalDensity = totalDensity + locations[a[modulo]].density
+if(errNb > 0) {
+	console.log('Usage: \n'+
+			'	node meter_gen [meters number (1 to 1M)] '+
+							  "[date begin 'yyyy/mm/dd'] "+
+							  "[date end 'yyyy/mm/dd'] "+
+							  '[data interval (in minutes)] '+
+							  "[data type ('gaz, 'electric' or 'mixed')] "+
+							  '(-separateFile) '+
+							  '(-temp) '+
+							  '(-location)');
+	process.exit(-2); // Argument error
 }
+// Parsing Arguments
+//
 
-for (var i = 1; meters.length <= NB_METERS; i++) {
-    modulo = meters.length % cityNb;
-    ratio = (locations[a[modulo]].density * NB_METERS) / totalDensity
-    if (locations[a[modulo]].density = !0) {
-        rest = NB_METERS - meters.length
-        for (j = 0; j < ratio && j <= rest; j++) {
-            var meter = {
-                l: locations[a[modulo]].l,
-                country: locations[a[modulo]].country,
-                region: locations[a[modulo]].region,
-                city: locations[a[modulo]].city,
-                p: locations[a[modulo]].p,
-                latitude: locations[a[modulo]].latitude,
-                longitude: locations[a[modulo]].longitude,
-                m: locations[a[modulo]].m,
-                a: locations[a[modulo]].a,
-                population: locations[a[modulo]].population,
-                density: locations[a[modulo]].density,
-                densityTotal: locations[a[modulo]].densityTotal,
-                highcost: 0,
-                lowcost: 0,
-                conso: 0,
-                houseType: "5",
-                consumptionType: ""
-            }
+//
+// Generating Meters information
+const meters = [];
+{	const shuffleIndex = [];
+	let totalDensity = 0;
+	let cityNb = locations.length;
 
-            var chooseBetween = (tab) => {
-                return tab[(Math.random() * tab.length) | 0];
-            }
+	for(let i=0; i<=locations.length-1; i++)
+	    shuffleIndex.push(i);
+	shuffle(shuffleIndex);
 
-            // chose one of the possibilities randomly, to Json, into houseType
-            meter.houseType = JSON.stringify(chooseBetween([20, 50, 70, 100]));
+	//Generate meter informations with location and meterID
+	for(let i = 0; i < NB_METERS; i++) {
+	    totalDensity += locations[shuffleIndex[i%cityNb]].density;
+	}
 
+	while(meters.length<=NB_METERS) {
+	    let curr_loc = locations[shuffleIndex[meters.length%cityNb]];
 
-            if (TYPE === "mixed") {
-                meter.consumptionType = chooseBetween(["electric", "gas"]);
-            } else if (TYPE === 'electric' || TYPE === 'gas') {
-                meter.consumptionType = TYPE;
-            }
-            meters.push(meter);
-        }
-    } else {
-        cityNb--;
-    }
-}
-meters = shuffle(meters);
-totalconso = 0
+	    if(curr_loc.density === 0) {
+	    	cityNb--;
+	    	continue;
+	    }
+
+	    const ratio = curr_loc.density*NB_METERS/totalDensity;
+	    const rest = NB_METERS-meters.length;
+
+	    for(j=0; j<ratio && j<=rest; j++) {
+	        const meter = {
+	            l:  		curr_loc.l,
+	            country: 	curr_loc.country,
+	            region: 	curr_loc.region,
+	            city: 		curr_loc.city,
+	            p: 			curr_loc.p,
+	            latitude: 	curr_loc.latitude,
+	            longitude: 	curr_loc.longitude,
+	            m: 			curr_loc.m,
+	            a: 			curr_loc.a,
+	            population: curr_loc.population,
+	            density: 	curr_loc.density,
+	            densityTotal: curr_loc.densityTotal,
+        		vid: 		'METER' + ('00000' + meters.length).slice(-6),
+	            highcost: 	0,
+	            lowcost: 	0,
+	            conso: 		0,
+	            houseType: JSON.stringify(chooseBetween([20, 50, 70, 100])) // chose one of the possibilities randomly, to Json, into houseType
+	        };
+
+	        if(TYPE === 'mixed')
+	            meter.consumptionType = chooseBetween(['electric', 'gas']);
+	        else /*if(TYPE === 'electric' || TYPE === 'gas')*/
+	            meter.consumptionType = TYPE;
+	        
+	        meters.push(meter);
+	    } // for(j=0; j<ratio && j<=rest; j++)
+	} // while(meters.length<=NB_METERS)
+} // Free 'shuffleIndex', 'totalDensity' and 'cityNb' variables
+shuffle(meters);
 
 // Create folder if want separate files
-if (WANT_SEPARATEFILE) {
-    OUTFOLDER = OUTFOLDER + moment().format('YYYYMMDDHHmmss') + '/';
-    fs.mkdirSync(OUTFOLDER);
+const DEFAULT_FILENAME = outFolder + 'meter_gen-' + moment().format('YYYYMMDDHHmmss') + '.csv';
+if(WANT_SEPARATEFILE) {
+    outFolder += moment().format('YYYYMMDDHHmmss') + '/';
+    fs.mkdirSync(outFolder);
+} else {
+	appendFirstLineToFile(DEFAULT_FILENAME);
 }
 
-FILENAME = OUTFOLDER + "meter_gen-" + moment().format('YYYYMMDDHHmmss') + ".csv";
-INTERVAL_CALCULED = 1440 / MINUTES_INTERVAL
 //Generate CSV file
 
-firstLine = "date,index,sumHC,sumHP,type,vid,size";
-if(WANT_TEMP)(firstLine += ",temp");
-if(WANT_LOCATION)(firstLine += ",city,lat,long,density");
-firstLine += "\n"
+// Build DataConsumption structure
+let DataConsumption;
+DataConsumption = {'20m':{}, s50:{}, s70:{}, s100:{}};
+DataConsumption = {gas: struct, elec: struct};
+DataConsumption = {Night: struct, Morning: struct, Day: struct, Evening: struct};
+DataConsumption = {wDay: struct, wEnd: struct};
+DataConsumption = {coldS: struct, hotS: struct};
 
-fs.appendFileSync(FILENAME, firstLine);
+// Fill DataConsumption values
 
-DataConsumption =   
-    {
+//  //  //  COLD SEASON  //  //  //  WORKING DAY
+// 00h -> 06h
+DataConsumption.coldS.wDay.Night.gas.s20 =  { avg:  655, stddev: 30 };
+DataConsumption.coldS.wDay.Night.gas.s50 =  { avg: 1113, stddev: 30 };
+DataConsumption.coldS.wDay.Night.gas.s70 =  { avg: 1571, stddev: 30 };
+DataConsumption.coldS.wDay.Night.gas.s100 = { avg: 1899, stddev: 30 };
 
-        ColdSeason: 
-        {
-            WorkingDay: 
-            {
-                Night: //00h -> 6h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 655,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1113,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1571,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 1899,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 2946,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 5532,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 8085,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 10379,
-                            EcartType: 30
-                        }
-                    }
-                },
-                Morning: //6h -> 9h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 764,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1299,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1833,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2215,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 3438,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 6454,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 9433,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 12108,
-                            EcartType: 30
-                        }
-                    }
-                },
-                Day: {
-                    Gas: {
-                        "20m": {
-                            Average: 436,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 742,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1048,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 1266,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 1964,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 3688,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 5390,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 6919,
-                            EcartType: 30
-                        }
-                    }
-                },
-                Evening: {
-                    Gas: {
-                        "20m": {
-                            Average: 1200,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 2041,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 2881,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 3481,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 5402,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 10142,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 14823,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 19027,
-                            EcartType: 30
-                        }
-                    }
-                }
-            },
-            Weekend: {
-                Night: //00h -> 6h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 539,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 917,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1294,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 1564,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 2946,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 5532,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 8085,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 10379,
-                            EcartType: 30
-                        }
-                    }
-                },
-                Morning: //7h -> 9h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 719,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1222,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1725,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2085,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 3929,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 7376,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 10780,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 13838,
-                            EcartType: 30
-                        }
-                    }
-                },
-                Day: {
-                    Gas: {
-                        "20m": {
-                            Average: 809,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1375,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1941,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2345,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 4420,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 8298,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 12128,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 15568,
-                            EcartType: 30
-                        }
-                    }
-                },
-                Evening: {
-                    Gas: {
-                        "20m": {
-                            Average: 988,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1680,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 2372,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2867,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 5402,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 10142,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 14823,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 19027,
-                            EcartType: 30
-                        }
-                    }
-                }
-            }
-        },
-        HotSeason: //March to November
-        {
-            WorkingDay: //Monday to Friday
-            {
-                Night: //00h -> 6h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 263,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 447,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 632,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 763,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 1184,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 2223,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 3249,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average: 4171,
-                            EcartType: 80
-                        }
-                    }
-                },
-                Morning: //6h -> 9h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 921,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1566,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 2210,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2671,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 4145,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 7782,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 11373,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average: 14599,
-                            EcartType: 80
-                        }
-                    }
-                },
-                Day: {
-                    Gas: {
-                        "20m": {
-                            Average: 263,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 447,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 632,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 763,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 1184,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 2223,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 3249,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average:  4171,
-                            EcartType: 80
-                        }
-                    }
-                },
-                Evening: {
-                    Gas: {
-                        "20m": {
-                            Average: 1052,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1789,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 2526,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 3052,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 4737,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 8894,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 12998,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average: 16685,
-                            EcartType: 80
-                        }
-                    }
-                }
-            },
-            Weekend: {
-                Night: //00h -> 6h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 208,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 354,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 500,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 604,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 1184,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 2223,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 3249,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average: 4171,
-                            EcartType: 80
-                        }
-                    }
-                },
-                Morning: //7h -> 9h 
-                {
-                    Gas: {
-                        "20m": {
-                            Average: 729,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1240,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1750,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2114,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 4145,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 7782,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 11373,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average: 14599,
-                            EcartType: 80
-                        }
-                    }
-                },
-                Day: {
-                    Gas: {
-                        "20m": {
-                            Average: 729,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1240,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 1750,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2114,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 4145,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 7782,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 11373,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average:  14599,
-                            EcartType: 80
-                        }
-                    }
-                },
-                Evening: {
-                    Gas: {
-                        "20m": {
-                            Average: 833,
-                            EcartType: 30
-                        },
-                        "50m": {
-                            Average: 1417,
-                            EcartType: 30
-                        },
-                        "70m": {
-                            Average: 2000,
-                            EcartType: 30
-                        },
-                        "100m": {
-                            Average: 2417,
-                            EcartType: 30
-                        }
-                    },
-                    Electric: {
-                        "20m": {
-                            Average: 4737,
-                            EcartType: 80
-                        },
-                        "50m": {
-                            Average: 8894,
-                            EcartType: 80
-                        },
-                        "70m": {
-                            Average: 12998,
-                            EcartType: 80
-                        },
-                        "100m": {
-                            Average: 16685,
-                            EcartType: 80
-                        }
-                    }
-                }
-            }
-        }
+DataConsumption.coldS.wDay.Night.elec.s20 =  { avg:  2946, stddev: 30 };
+DataConsumption.coldS.wDay.Night.elec.s50 =  { avg:  5532, stddev: 30 };
+DataConsumption.coldS.wDay.Night.elec.s70 =  { avg:  8085, stddev: 30 };
+DataConsumption.coldS.wDay.Night.elec.s100 = { avg: 10379, stddev: 30 };
 
-            }
+// 06h -> 09h
+DataConsumption.coldS.wDay.Morning.gas.s20 =  { avg:  764, stddev: 30 };
+DataConsumption.coldS.wDay.Morning.gas.s50 =  { avg: 1299, stddev: 30 };
+DataConsumption.coldS.wDay.Morning.gas.s70 =  { avg: 1833, stddev: 30 };
+DataConsumption.coldS.wDay.Morning.gas.s100 = { avg: 2215, stddev: 30 };
+
+DataConsumption.coldS.wDay.Morning.elec.s20 =  { avg:  3438, stddev: 30 };
+DataConsumption.coldS.wDay.Morning.elec.s50 =  { avg:  6454, stddev: 30 };
+DataConsumption.coldS.wDay.Morning.elec.s70 =  { avg:  9433, stddev: 30 };
+DataConsumption.coldS.wDay.Morning.elec.s100 = { avg: 12108, stddev: 30 };
+
+// 09h -> 18h
+DataConsumption.coldS.wDay.Day.gas.s20 =  { avg:  436, stddev: 30 };
+DataConsumption.coldS.wDay.Day.gas.s50 =  { avg:  742, stddev: 30 };
+DataConsumption.coldS.wDay.Day.gas.s70 =  { avg: 1048, stddev: 30 };
+DataConsumption.coldS.wDay.Day.gas.s100 = { avg: 1266, stddev: 30 };
+
+DataConsumption.coldS.wDay.Day.elec.s20 =  { avg: 1964, stddev: 30 };
+DataConsumption.coldS.wDay.Day.elec.s50 =  { avg: 3688, stddev: 30 };
+DataConsumption.coldS.wDay.Day.elec.s70 =  { avg: 5390, stddev: 30 };
+DataConsumption.coldS.wDay.Day.elec.s100 = { avg: 6919, stddev: 30 };
+
+// 18h -> 00h
+DataConsumption.coldS.wDay.Evening.gas.s20 =  { avg:  436, stddev: 30 };
+DataConsumption.coldS.wDay.Evening.gas.s50 =  { avg:  742, stddev: 30 };
+DataConsumption.coldS.wDay.Evening.gas.s70 =  { avg: 1048, stddev: 30 };
+DataConsumption.coldS.wDay.Evening.gas.s100 = { avg: 1266, stddev: 30 };
+
+DataConsumption.coldS.wDay.Evening.elec.s20 =  { avg:  3438, stddev: 30 };
+DataConsumption.coldS.wDay.Evening.elec.s50 =  { avg:  6454, stddev: 30 };
+DataConsumption.coldS.wDay.Evening.elec.s70 =  { avg:  9433, stddev: 30 };
+DataConsumption.coldS.wDay.Evening.elec.s100 = { avg: 12108, stddev: 30 };
+
+//  //  //  COLD SEASON  //  //  //  WEEKEND
+// 00h -> 06h
+DataConsumption.coldS.wEnd.Night.gas.s20 =  { avg:  539, stddev: 30 };
+DataConsumption.coldS.wEnd.Night.gas.s50 =  { avg:  917, stddev: 30 };
+DataConsumption.coldS.wEnd.Night.gas.s70 =  { avg: 1294, stddev: 30 };
+DataConsumption.coldS.wEnd.Night.gas.s100 = { avg: 1564, stddev: 30 };
+
+DataConsumption.coldS.wEnd.Night.elec.s20 =  { avg:  2946, stddev: 30 };
+DataConsumption.coldS.wEnd.Night.elec.s50 =  { avg:  5532, stddev: 30 };
+DataConsumption.coldS.wEnd.Night.elec.s70 =  { avg:  8085, stddev: 30 };
+DataConsumption.coldS.wEnd.Night.elec.s100 = { avg: 10379, stddev: 30 };
+
+// 06h -> 09h
+DataConsumption.coldS.wEnd.Morning.gas.s20 =  { avg:  719, stddev: 30 };
+DataConsumption.coldS.wEnd.Morning.gas.s50 =  { avg: 1222, stddev: 30 };
+DataConsumption.coldS.wEnd.Morning.gas.s70 =  { avg: 1725, stddev: 30 };
+DataConsumption.coldS.wEnd.Morning.gas.s100 = { avg: 2085, stddev: 30 };
+
+DataConsumption.coldS.wEnd.Morning.elec.s20 =  { avg:  3929, stddev: 30 };
+DataConsumption.coldS.wEnd.Morning.elec.s50 =  { avg:  7376, stddev: 30 };
+DataConsumption.coldS.wEnd.Morning.elec.s70 =  { avg: 10780, stddev: 30 };
+DataConsumption.coldS.wEnd.Morning.elec.s100 = { avg: 13838, stddev: 30 };
+
+// 09h -> 18h
+DataConsumption.coldS.wEnd.Day.gas.s20 =  { avg:  809, stddev: 30 };
+DataConsumption.coldS.wEnd.Day.gas.s50 =  { avg: 1375, stddev: 30 };
+DataConsumption.coldS.wEnd.Day.gas.s70 =  { avg: 1941, stddev: 30 };
+DataConsumption.coldS.wEnd.Day.gas.s100 = { avg: 2345, stddev: 30 };
+
+DataConsumption.coldS.wEnd.Day.elec.s20 =  { avg:  4420, stddev: 30 };
+DataConsumption.coldS.wEnd.Day.elec.s50 =  { avg:  8298, stddev: 30 };
+DataConsumption.coldS.wEnd.Day.elec.s70 =  { avg: 12128, stddev: 30 };
+DataConsumption.coldS.wEnd.Day.elec.s100 = { avg: 15568, stddev: 30 };
+
+// 18h -> 00h
+DataConsumption.coldS.wEnd.Evening.gas.s20 =  { avg:  988, stddev: 30 };
+DataConsumption.coldS.wEnd.Evening.gas.s50 =  { avg: 1680, stddev: 30 };
+DataConsumption.coldS.wEnd.Evening.gas.s70 =  { avg: 2372, stddev: 30 };
+DataConsumption.coldS.wEnd.Evening.gas.s100 = { avg: 2867, stddev: 30 };
+
+DataConsumption.coldS.wEnd.Evening.elec.s20 =  { avg:  5402, stddev: 30 };
+DataConsumption.coldS.wEnd.Evening.elec.s50 =  { avg: 10142, stddev: 30 };
+DataConsumption.coldS.wEnd.Evening.elec.s70 =  { avg: 14823, stddev: 30 };
+DataConsumption.coldS.wEnd.Evening.elec.s100 = { avg: 19027, stddev: 30 };
+
+//  //  //  HOT SEASON  //  //  //  WORKING DAY
+// 00h -> 06h
+DataConsumption.hotS.wDay.Night.gas.s20 =  { avg: 263, stddev: 30 };
+DataConsumption.hotS.wDay.Night.gas.s50 =  { avg: 447, stddev: 30 };
+DataConsumption.hotS.wDay.Night.gas.s70 =  { avg: 632, stddev: 30 };
+DataConsumption.hotS.wDay.Night.gas.s100 = { avg: 763, stddev: 30 };
+
+DataConsumption.hotS.wDay.Night.elec.s20 =  { avg: 1184, stddev: 30 };
+DataConsumption.hotS.wDay.Night.elec.s50 =  { avg: 2223, stddev: 30 };
+DataConsumption.hotS.wDay.Night.elec.s70 =  { avg: 3249, stddev: 30 };
+DataConsumption.hotS.wDay.Night.elec.s100 = { avg: 4171, stddev: 30 };
+
+// 06h -> 09h
+DataConsumption.hotS.wDay.Morning.gas.s20 =  { avg:  921, stddev: 30 };
+DataConsumption.hotS.wDay.Morning.gas.s50 =  { avg: 1566, stddev: 30 };
+DataConsumption.hotS.wDay.Morning.gas.s70 =  { avg: 2210, stddev: 30 };
+DataConsumption.hotS.wDay.Morning.gas.s100 = { avg: 2671, stddev: 30 };
+
+DataConsumption.hotS.wDay.Morning.elec.s20 =  { avg:  4145, stddev: 30 };
+DataConsumption.hotS.wDay.Morning.elec.s50 =  { avg:  7782, stddev: 30 };
+DataConsumption.hotS.wDay.Morning.elec.s70 =  { avg: 11373, stddev: 30 };
+DataConsumption.hotS.wDay.Morning.elec.s100 = { avg: 14599, stddev: 30 };
+
+// 09h -> 18h
+DataConsumption.hotS.wDay.Day.gas.s20 =  { avg: 263, stddev: 30 };
+DataConsumption.hotS.wDay.Day.gas.s50 =  { avg: 447, stddev: 30 };
+DataConsumption.hotS.wDay.Day.gas.s70 =  { avg: 632, stddev: 30 };
+DataConsumption.hotS.wDay.Day.gas.s100 = { avg: 763, stddev: 30 };
+
+DataConsumption.hotS.wDay.Day.elec.s20 =  { avg: 1184, stddev: 30 };
+DataConsumption.hotS.wDay.Day.elec.s50 =  { avg: 2223, stddev: 30 };
+DataConsumption.hotS.wDay.Day.elec.s70 =  { avg: 3249, stddev: 30 };
+DataConsumption.hotS.wDay.Day.elec.s100 = { avg: 4171, stddev: 30 };
+
+// 18h -> 00h
+DataConsumption.hotS.wDay.Evening.gas.s20 =  { avg: 1052, stddev: 30 };
+DataConsumption.hotS.wDay.Evening.gas.s50 =  { avg: 1789, stddev: 30 };
+DataConsumption.hotS.wDay.Evening.gas.s70 =  { avg: 2526, stddev: 30 };
+DataConsumption.hotS.wDay.Evening.gas.s100 = { avg: 3052, stddev: 30 };
+
+DataConsumption.hotS.wDay.Evening.elec.s20 =  { avg:  4737, stddev: 30 };
+DataConsumption.hotS.wDay.Evening.elec.s50 =  { avg:  8894, stddev: 30 };
+DataConsumption.hotS.wDay.Evening.elec.s70 =  { avg: 12998, stddev: 30 };
+DataConsumption.hotS.wDay.Evening.elec.s100 = { avg: 16685, stddev: 30 };
+
+//  //  //  HOT SEASON  //  //  //  WEEKEND
+// 00h -> 06h
+DataConsumption.hotS.wEnd.Night.gas.s20 =  { avg: 208, stddev: 30 };
+DataConsumption.hotS.wEnd.Night.gas.s50 =  { avg: 354, stddev: 30 };
+DataConsumption.hotS.wEnd.Night.gas.s70 =  { avg: 500, stddev: 30 };
+DataConsumption.hotS.wEnd.Night.gas.s100 = { avg: 604, stddev: 30 };
+
+DataConsumption.hotS.wEnd.Night.elec.s20 =  { avg: 1184, stddev: 30 };
+DataConsumption.hotS.wEnd.Night.elec.s50 =  { avg: 2223, stddev: 30 };
+DataConsumption.hotS.wEnd.Night.elec.s70 =  { avg: 3249, stddev: 30 };
+DataConsumption.hotS.wEnd.Night.elec.s100 = { avg: 4171, stddev: 30 };
+
+// 06h -> 09h
+DataConsumption.hotS.wEnd.Morning.gas.s20 =  { avg:  729, stddev: 30 };
+DataConsumption.hotS.wEnd.Morning.gas.s50 =  { avg: 1240, stddev: 30 };
+DataConsumption.hotS.wEnd.Morning.gas.s70 =  { avg: 1750, stddev: 30 };
+DataConsumption.hotS.wEnd.Morning.gas.s100 = { avg: 2114, stddev: 30 };
+
+DataConsumption.hotS.wEnd.Morning.elec.s20 =  { avg:  4145, stddev: 30 };
+DataConsumption.hotS.wEnd.Morning.elec.s50 =  { avg:  7782, stddev: 30 };
+DataConsumption.hotS.wEnd.Morning.elec.s70 =  { avg: 11373, stddev: 30 };
+DataConsumption.hotS.wEnd.Morning.elec.s100 = { avg: 14599, stddev: 30 };
+
+// 09h -> 18h
+DataConsumption.hotS.wEnd.Day.gas.s20 =  { avg:  729, stddev: 30 };
+DataConsumption.hotS.wEnd.Day.gas.s50 =  { avg: 1240, stddev: 30 };
+DataConsumption.hotS.wEnd.Day.gas.s70 =  { avg: 1750, stddev: 30 };
+DataConsumption.hotS.wEnd.Day.gas.s100 = { avg: 2114, stddev: 30 };
+
+DataConsumption.hotS.wEnd.Day.elec.s20 =  { avg:  4145, stddev: 30 };
+DataConsumption.hotS.wEnd.Day.elec.s50 =  { avg:  7782, stddev: 30 };
+DataConsumption.hotS.wEnd.Day.elec.s70 =  { avg: 11373, stddev: 30 };
+DataConsumption.hotS.wEnd.Day.elec.s100 = { avg: 14599, stddev: 30 };
+
+// 18h -> 00h
+DataConsumption.hotS.wEnd.Evening.gas.s20 =  { avg:  833, stddev: 30 };
+DataConsumption.hotS.wEnd.Evening.gas.s50 =  { avg: 1417, stddev: 30 };
+DataConsumption.hotS.wEnd.Evening.gas.s70 =  { avg: 2000, stddev: 30 };
+DataConsumption.hotS.wEnd.Evening.gas.s100 = { avg: 2417, stddev: 30 };
+
+DataConsumption.hotS.wEnd.Evening.elec.s20 =  { avg:  4737, stddev: 30 };
+DataConsumption.hotS.wEnd.Evening.elec.s50 =  { avg:  8894, stddev: 30 };
+DataConsumption.hotS.wEnd.Evening.elec.s70 =  { avg: 12998, stddev: 30 };
+DataConsumption.hotS.wEnd.Evening.elec.s100 = { avg: 16685, stddev: 30 };
+
+const CLIMATS = {
+    Mediteranean: {
+        coldS: { RatioAvg: 0.66, RatioStddev: 1.24 },
+        hotS: {  RatioAvg: 0.84, RatioStddev: 1.13 }
+    },
+    Oceanic: {
+        coldS: { RatioAvg: 0.66, RatioStddev: 1.24 },
+        hotS: {  RatioAvg: 0.84, RatioStddev: 1.13 }
+    },
+    Mountains: {
+        coldS: { RatioAvg: 0.66, RatioStddev: 1.24 },
+        hotS: {  RatioAvg: 0.84, RatioStddev: 1.13 }
+    },
+    Continental: {
+        coldS: { RatioAvg: 0.66, RatioStddev: 1.24 },
+        hotS: {  RatioAvg: 0.84, RatioStddev: 1.13 }
+    }
+};
 
 
-for (var d = moment(FROM, 'DD/MM/YYYY'); d <= moment(TO, 'DD/MM/YYYY'); d.add(MINUTES_INTERVAL, 'minutes')) {
-    for (var i = 1; i < meters.length; i++) {
-        var meter = meters[i];
-        
-        // Choose the Consumption depend on the situation
-        if ((d.format('MM') < '11') && (d.format('MM') > '03')) // Hot season (March -> November)
-        { 
-            CalculConsumptionSeason = 'HotSeason';
+for(let d=FROM; d<=TO; d.add(MINUTES_INTERVAL, 'minutes')) {
+    for(let i=0; i<meters.length; i++) {
+        const meter = meters[i];
+
+        // Choose the Consumption depending on the situation
+
+        // Hot season (March -> November)
+        const season = ((d.format('MM') < '11') && (d.format('MM') > '03')) ? 'hotS' : 'coldS';
+
+        // Working day (MTWTF)
+        const dayOfWeek = ((d.format('dddd') !== 'Sunday') && (d.format('dddd') !== 'Saturday')) ? 'wDay' : 'wEnd';
+
+        // electric gas
+        const energyType = meter.consumptionType;
+
+        // s20 s50 s70 s100
+        const surface = 's'+meter.houseType;
+
+        var consumptionTime = 'Evening';
+        {   const hours = d.format('HH');
+	        if(hours <= '06') {
+	            consumptionTime = 'Night'; // Night (00h -> 9H)
+	        } else if(hours <=  '09:00') {
+	            consumptionTime = 'Morning';  // Morning (6h -> 9h)
+	        } else if(hours <=  '17:00') {
+	            consumptionTime = 'Day'; // Day (9h -> 17h)
+	        } /*else {
+	            consumptionTime = 'Evening';  // Evening(17h -> 23h59)
+	        }*/
+	    } // Free 'hours' variable
+
+        let avg = DataConsumption[season][dayOfWeek][consumptionTime][energyType][surface].avg;
+        let stdev = DataConsumption[season][dayOfWeek][consumptionTime][energyType][surface].stddev;
+        if([29, 22, 56, 35, 44, 85, 49, 79, 17, 16, 33, 40, 32, 82, 47, 24, 46, 19, 87, 53, 37, 50, 14, 76, 80, 62, 59, 2, 8, 51, 10, 89, 58, 91].indexOf(meters[i].region) >= 0) { // Oceanic
+            avg *= CLIMATS.Oceanic[season].RatioAvg;
+            stdev *= CLIMATS.Oceanic[season].RatioStddev;
+        } else if([64, 65, 9, 66, 81, 12, 68, 15, 23, 63, 43, 42, 38, 5, 73, 74, 39, 25, 88, 48].indexOf(meter.region) >= 0) { // Mountains
+            avg *= CLIMATS.Mountains[season].RatioAvg;
+            stdev *= CLIMATS.Mountains[season].RatioStddev;
+        } else if([1, 55, 52, 70, 54, 57, 67, 90, 69, 20].indexOf(meter.region) >= 0) { // Continental
+            avg *= CLIMATS.Continental[season].RatioAvg;
+            stdev *= CLIMATS.Continental[season].RatioStddev;
+        } else /*if([7, 26, 30, 84, 4, 6, 83, 13, 34, 31, 11].indexOf(meter.region) >= 0)*/ { // Mediteranean
+            avg *= CLIMATS.Mediteranean[season].RatioAvg;
+            stdev *= CLIMATS.Mediteranean[season].RatioStddev;
         }
-        else
-        {
-            CalculConsumptionSeason = 'ColdSeason';
-        }
-        
-        if ((d.format('dddd') != "Sunday") && (d.format('dddd') != "Saturday")) // Working day (MTWTF)
-        {
-            CalculConsumptionDay = 'WorkingDay';
-        }
-        else
-        {
-            CalculConsumptionDay = 'Weekend';
-        }
-        
-        if ((d.format('HH:mm') <= '06:00') && (d.format('HH:mm') >= '00:00')) // Night (00h -> 9H)
-        {
-            CalculConsumptionTime = 'Night';
-        }
-        else if ((d.format('HH:mm') < '09:00') && (d.format('HH:mm') > '06:00')) // Morning (6h -> 9h)
-        {
-            CalculConsumptionTime = 'Morning';
-        }
-        else if ((d.format('HH:mm') <= '17:00') && (d.format('HH:mm') >= '09:00')) // Day (9h -> 17h)
-        {
-            CalculConsumptionTime = 'Day';
-        }
-        else if ((d.format('HH:mm') <= '07:00') && (d.format('HH:mm') >= '00:00')) // Evening(17h -> 23h59)
-        {
-            CalculConsumptionTime = 'Night';
-        }
-        
-        if (meter.consumptionType == 'electric') 
-        {
-            CalculConsumptionType = 'Electric';
-        }
-        else
-        {
-            CalculConsumptionType = 'Gas';
-        }
-        
-        if (meter.houseType == "20")
-        {
-            CalculHouseSize = "20m"
-        }
-        else if (meter.houseType == "50")
-        {
-            CalculHouseSize = "50m"
-        } 
-        else if (meter.houseType == "70")
-        {
-            CalculHouseSize = "70m"
-        } 
-        else if (meter.houseType == "100")
-        {
-            CalculHouseSize = "100m"
-        } 
-        CalculRegionRatioAvg = 1
-        CalculRegionRatioEcart = 1
-        if(0 <= [7, 26, 30, 84, 4, 6, 83, 13, 34, 31, 11].indexOf(meters[i].region)) //Mediteranean
-        {
-            if(CalculConsumptionSeason == 'ColdSeason')
-            {
-                CalculRegionRatioAvg = 0.66
-                CalculRegionRatioEcart = 1.24
-            }
-            else
-            {
-                CalculRegionRatioAvg = 0.84
-                CalculRegionRatio = 1.13
-            }
-            
-        }
-        else if (0 <= [29, 22, 56, 35, 44, 85, 49, 79, 17, 16, 33, 40, 32, 82, 47, 24, 46, 19, 87, 53, 37, 50, 14, 76, 80, 62, 59, 2, 8, 51, 10, 89, 58, 91].indexOf(meters[i].region)) // Oceanic
-        {
-            if(CalculConsumptionSeason == 'ColdSeason')
-            {
-                CalculRegionRatioAvg = 0.87
-                CalculRegionRatioEcart = 1.00
-            }
-            else
-            {
-                CalculRegionRatioAvg = 1.03
-                CalculRegionRatio = 0.98
-            }
-        }
-        else if (0 <= [64, 65, 9, 66, 81, 12, 68, 15, 23, 63, 43, 42, 38, 5, 73, 74, 39, 25, 88,  48].indexOf(meters[i].region)) //continental
-        {
-            if(CalculConsumptionSeason == 'ColdSeason')
-            {
-                CalculRegionRatioAvg = 1.72
-                CalculRegionRatioEcart = 1.02
-            }
-            else
-            {
-                CalculRegionRatioAvg = 1.11
-                CalculRegionRatioEcart = 0.96
-            }
-        }
-        else if ( 0 <= [1, 55, 52, 70, 54, 57, 67, 90, 69, 20].indexOf(meters[i].region))//mountain
-        {
-            if(CalculConsumptionSeason == 'ColdSeason')
-            {
-                CalculRegionRatioAvg = 1.72
-                CalculRegionRatioEcart = 1.02
-            }
-            else
-            {
-                CalculRegionRatioAvg = 1.11
-                CalculRegionRatioEcart = 0.96
-            }
-        }  
-       
-        meters[i].conso = rand.rnorm((DataConsumption[CalculConsumptionSeason][CalculConsumptionDay][CalculConsumptionTime][CalculConsumptionType][CalculHouseSize]["Average"]*CalculRegionRatioAvg),( DataConsumption[CalculConsumptionSeason][CalculConsumptionDay][CalculConsumptionTime][CalculConsumptionType][CalculHouseSize]["EcartType"])*CalculRegionRatioEcart) / INTERVAL_CALCULED;
+
+        {   const computed = rand.rnorm(avg, stdev) / (1440 / MINUTES_INTERVAL);
+	        console.log(computed);
+	        meter.conso = computed;
+	    } // Free 'computed' variable
+
         // Calculate the Consumption in zone hight cost or low cost
-        if ((d.format('HH:mm') <= '06:00') || (d.format('HH:mm') >= '22:00')) {
+        if((d.format('HH:mm') <= '06:00') || (d.format('HH:mm') >= '22:00'))
             meter.highcost += meter.conso;
-        } else {
+        else
             meter.lowcost += meter.conso;
-        }
 
-        var line = [];
+        const line = [
+			d.format(),
+			meter.conso,
+	        meter.highcost*0.001, // convert to KWh
+	        meter.lowcost*0.001, // convert to KWh
+	        meter.consumptionType,
+	        meter.vid,
+	        meter.houseType + 'm²'
+        ];
+ 
+        if(WANT_TEMP)
+            line.push((Math.random()*MAX_RANDOM_TEMP).toFixed(2));
 
-        line.push(d.format());
-        line.push(meter.conso);
-        line.push(0.001 * meter.highcost); // convert to KWh
-        line.push(0.001 * meter.lowcost);
-        line.push(meter.consumptionType);
-        var id = ('00000' + i).slice(-6);
-        meter.vid = 'METER' + id;
-        line.push(meter.vid);
-        line.push(meter.houseType + "m²");
-        if (WANT_TEMP)
-            line.push((Math.random() * MAX_RANDOM_TEMP).toFixed(2));
+        if(WANT_LOCATION) {
+            meter.latitude += (Math.random()*0.007 -0.0035); // add randomized lattitude
+            meter.longitude += (Math.random()*0.007 -0.0035); // add randomized longitude
 
-        if (WANT_LOCATION) {
             line.push(meter.city);
-            randLatitude = Math.random() * (0.007) - 0.0035.toFixed(4);
-            randLongitude = Math.random() * (0.007) - 0.0035.toFixed(4);
-            meter.latitude = meter.latitude + randLatitude;
-            meter.longitude = meter.longitude + randLongitude;
             line.push(meter.latitude.toFixed(6));
             line.push(meter.longitude.toFixed(6));
             line.push(meter.population);
         }
 
-        if (WANT_SEPARATEFILE)
-            FILENAME = OUTFOLDER + meter.vid + '.csv';
-
-        fs.appendFileSync(FILENAME, line.join(',').toString() + "\n");
+        if(WANT_SEPARATEFILE) {
+            let fileName = outFolder + meter.vid + '.csv';
+        	appendFirstLineToFile(fileName);
+        	fs.appendFileSync(fileName, line.join(',').toString() + '\n');
+        } else {
+	       	fs.appendFileSync(DEFAULT_FILENAME, line.join(',').toString() + '\n');
+    	}
     }
 }
 
-dateEnd = moment.now()
-console.log("Execution Time:", dateEnd - dateStart, "ms")
+console.log('Execution Time:', moment.now() - TIME_BEGIN, 'ms');
 
+//	//	//	Functions
+
+/** 
+ * Function to Shuffle the locations
+**/ 
+function shuffle(array) {
+	let index;
+
+    // for each element in array (but not first element)
+    for(let counter=array.length; counter>0; counter--) {
+        // Pick a random lower index
+        index = (Math.random()*counter)|0;
+
+        // And swap the element with the selected one
+        [array[counter], array[index]] = [array[index], array[counter]];
+    }
+    return array;
+}
+
+/** 
+ * return one of the values of the table passed in parameter, randomly choosen 
+**/
+function chooseBetween(tab) {
+    return tab[(Math.random()*tab.length)|0];
+}
+
+function appendFirstLineToFile(fileName) {
+	let firstLine = 'date,index,sumHC,sumHP,type,vid,size';
+	if(WANT_TEMP)
+		firstLine += ',temp';
+	if(WANT_LOCATION)
+		firstLine += ',city,lat,long,density';
+
+	fs.appendFileSync(fileName, firstLine+'\n');
+}
