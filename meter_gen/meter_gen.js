@@ -13,7 +13,7 @@
  * @Last Modified time: 2017-04-14
  *
  * Usage : 
- * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gaz, 'electric' or 'mixed')] (-separateFile) (-temp) (-location)
+ * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gaz, 'electric' or 'mixed')] (-separateFile) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFile')])
  * 
  * Example usage: 
  * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFile -location
@@ -26,11 +26,6 @@
 var moment = require('moment');
 var fs = require('fs');
 var rand = require('randgen');
-var extend = require('util')._extend;
-var Type = require('type-of-is');
-
-var locations = require('./locations.json');
-var iso3 = require('./iso3.json');
 // Libraries and external files
 // 
 
@@ -43,7 +38,6 @@ const MAX_RANDOM_INDEX = 1000;
 const MAX_RANDOM_TEMP = 35;
 const TOTAL_DENSITY = 486;
 const TOTAL_POPULATION = 64886015;
-var outFolder = './out/';
 // Defining constants
 //
 
@@ -82,7 +76,7 @@ if(!moment(arg, 'YYYY/MM/DD', true).isValid()) {
 
 arg = args.shift(); // arg3
 const TO = moment(arg, 'YYYY/MM/DD');
-if(!moment(myArgs[2], 'YYYY/MM/DD', true).isValid()) {
+if(!moment(arg, 'YYYY/MM/DD', true).isValid()) {
     console.log('ERROR: Check your end date, should be in format yyyy/mm/dd (you put', arg+')');
     errNb++;
 }
@@ -101,21 +95,30 @@ if(TYPE !== 'electric' && TYPE !== 'gas' && TYPE !== 'mixed') {
     errNb++;
 }
 
-var WANT_SEPARATEFILE = false;
-var WANT_TEMP = false;
-var WANT_LOCATION = false;
+var wantSeparateFile = false;
+var wantTemperature = false;
+var wantLocation = false;
+var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 
 while(args.length > 0) {
 	arg = args.shift();
 	switch(arg) {
 		case '-separateFile':
-			WANT_SEPARATEFILE = true;
+			wantSeparateFile = true;
 			break;
 		case '-temp':
-			WANT_TEMP = true;
+			wantTemperature = true;
 			break;
 		case '-location':
-			WANT_LOCATION = true;
+			wantLocation = true;
+			break;
+		case '-out':
+			if(args.length < 1) {
+				console.log('ERROR: -out need an argument.');
+				errNb++;
+			} else {
+				filePath = args.shift();
+			}
 			break;
 		default:
 			console.log('ERROR: Unknown argument:', arg);
@@ -139,51 +142,77 @@ if(errNb > 0) {
 //
 
 //
+// Check filePath
+var fd;
+if(wantSeparateFile) {
+	if(!filePath.endsWith('/'))
+		filePath += '/';
+
+	try {
+		fs.mkdirSync(filePath);
+	} catch (e) { /* ignored */ }
+} else {
+	if(filePath.endsWith('/'))
+		filePath += 'meter_gen.csv';
+
+	let folder = filePath.match(/^(.*)\//);
+	folder = (folder.length > 0)?folder[0]:'.';
+
+	try {
+		fs.mkdirSync(folder);
+	} catch (e) { /* ignored */ }
+	fd = appendFirstLineToFile(filePath);
+}
+// Check filePath
+// 
+
+//
 // Generating Meters information
 const meters = [];
-{	const shuffleIndex = [];
+{	const locations = require('./locations.json');
+	const shuffleIndex = [];
 	let totalDensity = 0;
 	let cityNb = locations.length;
 
-	for(let i=0; i<=locations.length-1; i++)
-	    shuffleIndex.push(i);
+	for(let i=locations.length-1; i>=0; i--) {
+		let curr_loc = locations[i];
+	    if(!curr_loc.density) {
+	    	cityNb--;
+	    } else {
+	   		shuffleIndex.push(i);
+	    }
+	}
 	shuffle(shuffleIndex);
 
 	//Generate meter informations with location and meterID
-	for(let i = 0; i < NB_METERS; i++) {
+	for(let i=NB_METERS-1; i>=0; i--)
 	    totalDensity += locations[shuffleIndex[i%cityNb]].density;
-	}
 
-	while(meters.length<=NB_METERS) {
+	while(meters.length<NB_METERS) {
 	    let curr_loc = locations[shuffleIndex[meters.length%cityNb]];
 
-	    if(curr_loc.density === 0) {
-	    	cityNb--;
-	    	continue;
-	    }
-
-	    const ratio = curr_loc.density*NB_METERS/totalDensity;
+	    const RATIO = curr_loc.density*NB_METERS/totalDensity;
 	    const rest = NB_METERS-meters.length;
 
-	    for(j=0; j<ratio && j<=rest; j++) {
+	    for(j=0; j<RATIO && j<=rest; j++) {
 	        const meter = {
-	            l:  		curr_loc.l,
-	            country: 	curr_loc.country,
+	            //l:  		curr_loc.l,
+	            //country: 	curr_loc.country,
 	            region: 	curr_loc.region,
 	            city: 		curr_loc.city,
-	            p: 			curr_loc.p,
+	            //p: 		curr_loc.p,
 	            latitude: 	curr_loc.latitude,
 	            longitude: 	curr_loc.longitude,
-	            m: 			curr_loc.m,
-	            a: 			curr_loc.a,
+	            //m: 		curr_loc.m,
+	            //a:		curr_loc.a,
 	            population: curr_loc.population,
-	            density: 	curr_loc.density,
-	            densityTotal: curr_loc.densityTotal,
+	            //density: 	curr_loc.density,
+	            //densityTotal: curr_loc.densityTotal,
         		vid: 		'METER' + ('00000' + meters.length).slice(-6),
 	            highcost: 	0,
 	            lowcost: 	0,
-	            conso: 		0,
-	            houseType: JSON.stringify(chooseBetween([20, 50, 70, 100])) // chose one of the possibilities randomly, to Json, into houseType
+	            //conso: 	0,
+	            houseType: chooseBetween([20, 50, 70, 100]) // chose one of the possibilities randomly, to Json, into houseType
 	        };
 
 	        if(TYPE === 'mixed')
@@ -191,30 +220,25 @@ const meters = [];
 	        else /*if(TYPE === 'electric' || TYPE === 'gas')*/
 	            meter.consumptionType = TYPE;
 	        
+	        if(!meter) {
+	        	console.log("!! No Meter :>", meters.length, j, RATIO, rest, curr_loc);
+	        	process.exit(-1);
+	        }
 	        meters.push(meter);
 	    } // for(j=0; j<ratio && j<=rest; j++)
 	} // while(meters.length<=NB_METERS)
-} // Free 'shuffleIndex', 'totalDensity' and 'cityNb' variables
+} // Free 'shuffleIndex', 'totalDensity', 'locations' and 'cityNb' variables
 shuffle(meters);
-
-// Create folder if want separate files
-const DEFAULT_FILENAME = outFolder + 'meter_gen-' + moment().format('YYYYMMDDHHmmss') + '.csv';
-if(WANT_SEPARATEFILE) {
-    outFolder += moment().format('YYYYMMDDHHmmss') + '/';
-    fs.mkdirSync(outFolder);
-} else {
-	appendFirstLineToFile(DEFAULT_FILENAME);
-}
 
 //Generate CSV file
 
 // Build DataConsumption structure
 let DataConsumption;
 DataConsumption = {'20m':{}, s50:{}, s70:{}, s100:{}};
-DataConsumption = {gas: struct, elec: struct};
-DataConsumption = {Night: struct, Morning: struct, Day: struct, Evening: struct};
-DataConsumption = {wDay: struct, wEnd: struct};
-DataConsumption = {coldS: struct, hotS: struct};
+DataConsumption = {gas: DataConsumption, elec: DataConsumption};
+DataConsumption = {Night: DataConsumption, Morning: DataConsumption, Day: DataConsumption, Evening: DataConsumption};
+DataConsumption = {wDay: DataConsumption, wEnd: DataConsumption};
+DataConsumption = {coldS: DataConsumption, hotS: DataConsumption};
 
 // Fill DataConsumption values
 
@@ -416,7 +440,10 @@ const CLIMATS = {
         hotS: {  RatioAvg: 0.84, RatioStddev: 1.13 }
     }
 };
-
+//const oceanicDpts = [29, 22, 56, 35, 44, 85, 49, 79, 17, 16, 33, 40, 32, 82, 47, 24, 46, 19, 87, 53, 37, 50, 14, 76, 80, 62, 59, 2, 8, 51, 10, 89, 58, 91];
+const mountainsDpts = new Set([64, 65, 9, 66, 81, 12, 68, 15, 23, 63, 43, 42, 38, 5, 73, 74, 39, 25, 88, 48]);
+const continentalDpts = new Set([1, 55, 52, 70, 54, 57, 67, 90, 69, 20]);
+const mediteraneanDpts = new Set([7, 26, 30, 84, 4, 6, 83, 13, 34, 31, 11]);
 
 for(let d=FROM; d<=TO; d.add(MINUTES_INTERVAL, 'minutes')) {
     for(let i=0; i<meters.length; i++) {
@@ -431,65 +458,62 @@ for(let d=FROM; d<=TO; d.add(MINUTES_INTERVAL, 'minutes')) {
         const dayOfWeek = ((d.format('dddd') !== 'Sunday') && (d.format('dddd') !== 'Saturday')) ? 'wDay' : 'wEnd';
 
         // electric gas
-        const energyType = meter.consumptionType;
+        const energyType = meter.consumptionType==='electric'?'elec':'gas';
 
         // s20 s50 s70 s100
         const surface = 's'+meter.houseType;
 
         var consumptionTime = 'Evening';
-        {   const hours = d.format('HH');
-	        if(hours <= '06') {
-	            consumptionTime = 'Night'; // Night (00h -> 9H)
-	        } else if(hours <=  '09:00') {
-	            consumptionTime = 'Morning';  // Morning (6h -> 9h)
-	        } else if(hours <=  '17:00') {
-	            consumptionTime = 'Day'; // Day (9h -> 17h)
-	        } /*else {
-	            consumptionTime = 'Evening';  // Evening(17h -> 23h59)
-	        }*/
-	    } // Free 'hours' variable
+        const hours = d.format('HH')|0;
+        if(hours <= 6) {
+            consumptionTime = 'Night'; // Night (00h -> 9H)
+        } else if(hours <=  9) {
+            consumptionTime = 'Morning';  // Morning (6h -> 9h)
+        } else if(hours <=  17) {
+            consumptionTime = 'Day'; // Day (9h -> 17h)
+        } /*else {
+            consumptionTime = 'Evening';  // Evening(17h -> 23h59)
+        }*/
 
         let avg = DataConsumption[season][dayOfWeek][consumptionTime][energyType][surface].avg;
         let stdev = DataConsumption[season][dayOfWeek][consumptionTime][energyType][surface].stddev;
-        if([29, 22, 56, 35, 44, 85, 49, 79, 17, 16, 33, 40, 32, 82, 47, 24, 46, 19, 87, 53, 37, 50, 14, 76, 80, 62, 59, 2, 8, 51, 10, 89, 58, 91].indexOf(meters[i].region) >= 0) { // Oceanic
-            avg *= CLIMATS.Oceanic[season].RatioAvg;
-            stdev *= CLIMATS.Oceanic[season].RatioStddev;
-        } else if([64, 65, 9, 66, 81, 12, 68, 15, 23, 63, 43, 42, 38, 5, 73, 74, 39, 25, 88, 48].indexOf(meter.region) >= 0) { // Mountains
+        
+        if(mountainsDpts.has(meter.region)) { // Mountains
             avg *= CLIMATS.Mountains[season].RatioAvg;
             stdev *= CLIMATS.Mountains[season].RatioStddev;
-        } else if([1, 55, 52, 70, 54, 57, 67, 90, 69, 20].indexOf(meter.region) >= 0) { // Continental
+        } else if(continentalDpts.has(meter.region)) { // Continental
             avg *= CLIMATS.Continental[season].RatioAvg;
             stdev *= CLIMATS.Continental[season].RatioStddev;
-        } else /*if([7, 26, 30, 84, 4, 6, 83, 13, 34, 31, 11].indexOf(meter.region) >= 0)*/ { // Mediteranean
+        } else if(mediteraneanDpts.has(meter.region)) { // Mediteranean
             avg *= CLIMATS.Mediteranean[season].RatioAvg;
             stdev *= CLIMATS.Mediteranean[season].RatioStddev;
+        } else /*if(oceanicDpts.has(meters[i].region))*/ { // Oceanic
+            avg *= CLIMATS.Oceanic[season].RatioAvg;
+            stdev *= CLIMATS.Oceanic[season].RatioStddev;
         }
 
-        {   const computed = rand.rnorm(avg, stdev) / (1440 / MINUTES_INTERVAL);
-	        console.log(computed);
-	        meter.conso = computed;
-	    } // Free 'computed' variable
+        const meter_conso = rand.rnorm(avg, stdev) / (1440 / MINUTES_INTERVAL);
 
         // Calculate the Consumption in zone hight cost or low cost
-        if((d.format('HH:mm') <= '06:00') || (d.format('HH:mm') >= '22:00'))
-            meter.highcost += meter.conso;
+        if(hours<=6 || hours>=22)
+            meter.highcost += meter_conso;
         else
-            meter.lowcost += meter.conso;
+            meter.lowcost += meter_conso;
 
         const line = [
 			d.format(),
-			meter.conso,
-	        meter.highcost*0.001, // convert to KWh
+			meter_conso,
 	        meter.lowcost*0.001, // convert to KWh
+	        meter.highcost*0.001, // convert to KWh
 	        meter.consumptionType,
 	        meter.vid,
 	        meter.houseType + 'm²'
         ];
  
-        if(WANT_TEMP)
+        if(wantTemperature)
             line.push((Math.random()*MAX_RANDOM_TEMP).toFixed(2));
 
-        if(WANT_LOCATION) {
+        if(wantLocation) {
             meter.latitude += (Math.random()*0.007 -0.0035); // add randomized lattitude
             meter.longitude += (Math.random()*0.007 -0.0035); // add randomized longitude
 
@@ -499,28 +523,31 @@ for(let d=FROM; d<=TO; d.add(MINUTES_INTERVAL, 'minutes')) {
             line.push(meter.population);
         }
 
-        if(WANT_SEPARATEFILE) {
-            let fileName = outFolder + meter.vid + '.csv';
-        	appendFirstLineToFile(fileName);
-        	fs.appendFileSync(fileName, line.join(',').toString() + '\n');
+        if(wantSeparateFile) {
+            let fileName = filePath + meter.vid + '.csv';
+        	fd = appendFirstLineToFile(fileName);
+        	appendToFile(fd, line);
+        	fs.close(fd);
         } else {
-	       	fs.appendFileSync(DEFAULT_FILENAME, line.join(',').toString() + '\n');
+	       	appendToFile(fd, line);
     	}
     }
 }
 
+if(!wantSeparateFile)
+	fs.close(fd);
 console.log('Execution Time:', moment.now() - TIME_BEGIN, 'ms');
 
 //	//	//	Functions
 
 /** 
- * Function to Shuffle the locations
+ * Function to Shuffle an array
 **/ 
 function shuffle(array) {
 	let index;
 
     // for each element in array (but not first element)
-    for(let counter=array.length; counter>0; counter--) {
+    for(let counter=array.length-1; counter>0; counter--) {
         // Pick a random lower index
         index = (Math.random()*counter)|0;
 
@@ -538,11 +565,17 @@ function chooseBetween(tab) {
 }
 
 function appendFirstLineToFile(fileName) {
-	let firstLine = 'date,index,sumHC,sumHP,type,vid,size';
-	if(WANT_TEMP)
-		firstLine += ',temp';
-	if(WANT_LOCATION)
-		firstLine += ',city,lat,long,density';
+	const firstLine = ['date,index,sumHC,sumHP,type,vid,size'];
+	if(wantTemperature)
+		firstLine.push('temp');
+	if(wantLocation)
+		firstLine.push('city,lat,long,population');
 
-	fs.appendFileSync(fileName, firstLine+'\n');
+	const fd = fs.openSync(fileName, 'w');
+	appendToFile(fd, firstLine);
+	return fd;
+}
+
+function appendToFile(fileDescriptor, tab) {
+	fs.appendFileSync(fileDescriptor, tab.join(',').toString()+'\n'); // asynchroneous
 }
