@@ -4,6 +4,7 @@
   "description": "npm install # execution \t./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-temp] [-location]",
   "main": "meter_gen.js",
   "dependencies": {
+    "async": "^2.3.0",
     "moment": "^2.11.1",
     "randgen": "^0.1.0"
   },
