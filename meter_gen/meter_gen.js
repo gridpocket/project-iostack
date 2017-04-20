@@ -10,13 +10,13 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-04-19
+ * @Last Modified time: 2017-04-20
  *
  * Usage : 
- * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gaz, 'electric' or 'mixed')] (-separateFile) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFile')])
+ * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gaz, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
  * 
  * Example usage: 
- * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFile -location
+ * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFiles -location
 **/
 
 /*jshint esversion: 6 */
@@ -33,6 +33,7 @@ var rand = require('randgen');
 
 // Speed-up meter_gen, using more memory to save time
 var printEveryNbLines = 100; // Print in file 10 by 10 lines instead of 1 by 1
+var openFiles = [];
 var linesToPrint = {}; // { 'path/to/file1': ['line1', 'line2', ...], 'path/to/file1': ['line1', 'line2', ...], ...}
 
 
@@ -52,7 +53,7 @@ var FROM;
 var TO;
 var MINUTES_INTERVAL;
 var TYPE;
-//var wantSeparateFile = false;
+var wantSeparateFile = false;
 var wantTemperature = false;
 var wantLocation = false;
 var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
@@ -70,7 +71,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 									  "[date end 'yyyy/mm/dd'] "+
 									  '[data interval (in minutes)] '+
 									  "[data type ('gaz, 'electric' or 'mixed')] "+
-									  '(-separateFile) '+
+									  '(-separateFiles) '+
 									  '(-temp) '+
 									  '(-location)');
 		process.exit(-1); // not enough arguments
@@ -117,9 +118,8 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 	while(args.length > 0) {
 		arg = args.shift();
 		switch(arg) {
-			case '-separateFile':
-				//wantSeparateFile = true;
-				console.log('WARNING -separateFile is Temporary disabled !');
+			case '-separateFiles':
+				wantSeparateFile = true;
 				break;
 			case '-temp':
 				wantTemperature = true;
@@ -148,7 +148,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 								  "[date end 'yyyy/mm/dd'] "+
 								  '[data interval (in minutes)] '+
 								  "[data type ('gaz, 'electric' or 'mixed')] "+
-								  '(-separateFile) '+
+								  '(-separateFiles) '+
 								  '(-temp) '+
 								  '(-location)');
 		process.exit(-2); // Argument error
@@ -159,15 +159,14 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 
 //
 // Check filePath
-var fd;
-/*if(wantSeparateFile) {
+if(wantSeparateFile) {
 	if(!filePath.endsWith('/'))
 		filePath += '/';
 
 	try {
 		fs.mkdirSync(filePath);
-	} catch (e) { /* ignored */ /*}
-} else */{
+	} catch (e) { /* ignored */ }
+} else {
 	if(filePath.endsWith('/'))
 		filePath += 'meter_gen.csv';
 
@@ -177,67 +176,47 @@ var fd;
 	try {
 		fs.mkdirSync(folder);
 	} catch (e) { /* ignored */ }
-	fd = openFile(filePath);
 }
 // Check filePath
 // 
 
 
 // Build DataConsumption structure
-const CONFIG = getConfig();
 let locations = [];
 let sumPopulation = 0;
+const kmLongitude = (360/6378);
+const kmLatitude = (360/6357);
+const CONFIG = getConfig();
 [locations, sumPopulation] = getLocations();
-
 
 //
 // Generating Meters information
-let meters = [];
-{
-	const kmLongitude = (360/6378);
-	const kmLatitude = (360/6357);
+for(let i=NB_METERS-1; i>=0; i--) {
+	const cityRandomIndex = Math.random() * sumPopulation;
+	const city = findLocation(cityRandomIndex); // city: {country,region,city,lattitude,longitude,radius,chance}
 
+    const meter = {
+		vid: 	   'METER' + ('00000' + i).slice(-6),
+        houseType: chooseBetween([20, 50, 70, 100]), // chose one of the possibilities randomly, to Json, into houseType
+        region:    city.region,
+        city: 	   city.name,
+        latitude:  (city.latitude + (Math.random()*city.radius*2 -city.radius)*kmLatitude).toFixed(6), // add randomized lattitude
+        longitude: (city.longitude + (Math.random()*city.radius*2 -city.radius)*kmLongitude).toFixed(6), // add randomized longitude
+    };
 
-	// location: {country,region,city,lattitude,longitude,radius,chance}
-	for(let i=NB_METERS; i>=0; i--) {
-		const cityRandomIndex = Math.random() * sumPopulation;
-		const city = findLocation(cityRandomIndex);
+    if(TYPE === 'mixed')
+        meter.consumptionType = chooseBetween(['electric', 'gas']);
+    else /*if(TYPE === 'electric' || TYPE === 'gas')*/
+        meter.consumptionType = TYPE;
 
-        const meter = {
-    		vid: 		'METER' + ('00000' + meters.length).slice(-6),
-            houseType: chooseBetween([20, 50, 70, 100]), // chose one of the possibilities randomly, to Json, into houseType
-            region: 	city.region,
-            city: 		city.name,
-            latitude: 	(city.latitude + (Math.random()*city.radius*2 -city.radius)*kmLatitude).toFixed(6), // add randomized lattitude
-            longitude: 	(city.longitude + (Math.random()*city.radius*2 -city.radius)*kmLongitude).toFixed(6), // add randomized longitude
-        };
-
-        if(TYPE === 'mixed')
-            meter.consumptionType = chooseBetween(['electric', 'gas']);
-        else /*if(TYPE === 'electric' || TYPE === 'gas')*/
-            meter.consumptionType = TYPE;
-
-        meters.push(meter);
-	}
+    // Add data to files for this meter
+    generateAllForOneMeter(meter);
 }
 
-//
-// File Generation
-while(meters.length > 0) { // For each meter
-	generateAllForOneMeter(meters.shift());
+// close files
+while(openFiles.length > 0) {
+	closeFile(openFiles[0]);
 }
-//if(!wantSeparateFile)
-	closeFile(fd);
-
-/*
-async.timesLimit(meters.length, 4, (err,cb)=>generateAllForOneMeter(meters.shift(), cb), ()=>{
-	// close file
-	//if(!wantSeparateFile)
-	closeFile(fd);
-});*/
-// File Generation
-//
-
 
 //  //  //  //  // Execution End //  //  //  //  //
 //      //      //               //      //      //
@@ -245,24 +224,6 @@ async.timesLimit(meters.length, 4, (err,cb)=>generateAllForOneMeter(meters.shift
 
 //
 // Functions
-
-/** 
- * Function to Shuffle an array
-**/ 
-function shuffle(array) {
-	let index;
-
-    // for each element in array (but not first element)
-    for(let counter=array.length-1; counter>0; counter--) {
-        // Pick a random lower index
-        index = (Math.random()*counter)|0;
-
-        // And swap the element with the selected one
-        [array[counter], array[index]] = [array[index], array[counter]];
-    }
-    return array;
-}
-
 /** 
  * return one of the values of the table passed in parameter, randomly choosen 
 **/
@@ -271,40 +232,45 @@ function chooseBetween(tab) {
 }
 
 function openFile(fileName) {
+	if(openFiles.indexOf(fileName) >= 0)
+		return;
+
+	openFiles.push(fileName);
+	linesToPrint[fileName] = [];
+
 	const firstLine = ['date,index,sumHC,sumHP,type,vid,size'];
 	if(wantTemperature)
 		firstLine.push('temp');
 	if(wantLocation)
 		firstLine.push('city,lat,long');
-
-	const fileDescriptor = fs.openSync(fileName, 'w');
-	appendToFile(fileDescriptor, firstLine);
-	return fileDescriptor;
+	fs.writeFile(fileName, firstLine+'\n');
 }
 
-function appendToFile(fileDescriptor, tab) {
-	if(!linesToPrint[fileDescriptor]) {
-		linesToPrint[fileDescriptor] = [];
-	}
+function appendToFile(fileName, tab) {
+	if(openFiles.indexOf(fileName) < 0)
+		openFile(fileName);
 
-	linesToPrint[fileDescriptor].push(tab.join(','));
-	if(linesToPrint[fileDescriptor].length >= printEveryNbLines) {
-		fs.appendFileSync(fileDescriptor, linesToPrint[fileDescriptor].join('\n')+'\n'); // synchroneous (faster than asynchroneous)
-		linesToPrint[fileDescriptor] = [];
+	if(linesToPrint[fileName].length +1 >= printEveryNbLines) {
+		const line = linesToPrint[fileName];
+		linesToPrint[fileName] = [];
+		fs.appendFile(fileName, line.join('\n')+tab.join(',')+'\n');
+	} else {
+		linesToPrint[fileName].push(tab.join(','));
 	}
 }
 
-function closeFile(fileDescriptor) {
+function closeFile(fileName) {
 	// print all missing lines
-	if(linesToPrint[fileDescriptor]) {
-		if(linesToPrint[fileDescriptor].length > 0) {
-			fs.appendFileSync(fileDescriptor, linesToPrint[fileDescriptor].join('\n')+'\n'); // synchroneous (faster than asynchroneous)
+	if(linesToPrint[fileName]) {
+		if(linesToPrint[fileName].length > 0) {
+			fs.appendFileSync(fileName, linesToPrint[fileName].join('\n')+'\n'); // synchroneous (faster than asynchroneous)
 		}
-		delete linesToPrint[fileDescriptor];
+		delete linesToPrint[fileName];
 	}
 
-	// close file
-	fs.close(fileDescriptor);
+	let index = openFiles.indexOf(fileName);
+	if(index >= 0)
+		openFiles.splice(index, 1);
 }
 
 function getConfig() {
@@ -325,6 +291,8 @@ function getLocations() {
 	let curr_chance = 0;
 	while(locationsFile.length > 0) {
 		let curr_loc = locationsFile.shift();
+		if(curr_loc.population<1 || curr_loc.density===0)
+			continue;
 
 		curr_chance += curr_loc.population; // ...+343304
 		locations.push({
@@ -340,20 +308,23 @@ function getLocations() {
 
 	return [locations, curr_chance];
 }
+
 function findLocation(humanNumber, min=0, max=locations.length-1) {
 	let cut = ((max-min)/2)|0;
 	if(min===max || locations[cut].chance === humanNumber) { // if is the cut
 		return locations[cut];
 	} else if(locations[min].chance <= humanNumber) { // if is the minimum
 		return locations[min];
+	} else if(locations[max].chance > humanNumber) { // if is the maximum
+		return locations[max];
 	} else if(locations[cut].chance > humanNumber) { // recursively call 
-		return findLocation(min+1, cut);
-	} else {	
-		return findLocation(cut+1, max);
+		return findLocation(min+1, cut-1);
+	} else {
+		return findLocation(cut+1, max-1);
 	}
 }
 
-function generateAllForOneMeter(meter/*, cb*/) {
+function generateAllForOneMeter(meter) {
     // electric gas
     const energyType = meter.consumptionType==='electric'?'elec':'gas';
 
@@ -446,15 +417,10 @@ function generateAllForOneMeter(meter/*, cb*/) {
         if(wantTemperature) 
         	line[7] = (Math.random()*MAX_RANDOM_TEMP).toFixed(2);
 
-        /*if(wantSeparateFile) {
-            let fileName = filePath + meter.vid + '.csv';
-        	fd = openFile(fileName);
-        	appendToFile(fd, line);
-        	closeFile(fd);
-        } else*/ {
-	       	appendToFile(fd, line);
+        if(wantSeparateFile) {
+        	appendToFile(filePath + d.format('YYYY_MM_DD-HH_mm_ss') + '.csv', line);
+        } else {
+	       	appendToFile(filePath, line);
     	}
     }
-
-    //cb();
 }
