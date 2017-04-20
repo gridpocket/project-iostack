@@ -32,9 +32,7 @@ var rand = require('randgen');
 // 
 
 // Speed-up meter_gen, using more memory to save time
-var printEveryNbLines = 100; // Print in file 10 by 10 lines instead of 1 by 1
 var openFiles = [];
-var linesToPrint = {}; // { 'path/to/file1': ['line1', 'line2', ...], 'path/to/file1': ['line1', 'line2', ...], ...}
 
 
 //
@@ -236,38 +234,23 @@ function openFile(fileName) {
 		return;
 
 	openFiles.push(fileName);
-	linesToPrint[fileName] = [];
 
 	const firstLine = ['date,index,sumHC,sumHP,type,vid,size'];
 	if(wantTemperature)
 		firstLine.push('temp');
 	if(wantLocation)
 		firstLine.push('city,lat,long');
-	fs.writeFile(fileName, firstLine+'\n');
+	fs.writeFileSync(fileName, firstLine+'\n');
 }
 
 function appendToFile(fileName, tab) {
 	if(openFiles.indexOf(fileName) < 0)
 		openFile(fileName);
 
-	if(linesToPrint[fileName].length +1 >= printEveryNbLines) {
-		const line = linesToPrint[fileName];
-		linesToPrint[fileName] = [];
-		fs.appendFile(fileName, line.join('\n')+tab.join(',')+'\n');
-	} else {
-		linesToPrint[fileName].push(tab.join(','));
-	}
+	fs.appendFileSync(fileName, tab.join(',')+'\n');
 }
 
 function closeFile(fileName) {
-	// print all missing lines
-	if(linesToPrint[fileName]) {
-		if(linesToPrint[fileName].length > 0) {
-			fs.appendFileSync(fileName, linesToPrint[fileName].join('\n')+'\n'); // synchroneous (faster than asynchroneous)
-		}
-		delete linesToPrint[fileName];
-	}
-
 	let index = openFiles.indexOf(fileName);
 	if(index >= 0)
 		openFiles.splice(index, 1);
@@ -310,14 +293,17 @@ function getLocations() {
 }
 
 function findLocation(humanNumber, min=0, max=locations.length-1) {
-	let cut = ((max-min)/2)|0;
-	if(min===max || locations[cut].chance === humanNumber) { // if is the cut
-		return locations[cut];
-	} else if(locations[min].chance <= humanNumber) { // if is the minimum
+	if(min >= max)
 		return locations[min];
-	} else if(locations[max].chance > humanNumber) { // if is the maximum
+
+	const cut = ((max-min)/2)|0;
+	if(locations[cut].chance === humanNumber) { // if is the cut
+		return locations[cut];
+	} else if(humanNumber <= locations[min].chance) { // if is the minimum
+		return locations[min];
+	} else if(humanNumber > locations[max-1].chance) { // if is the maximum
 		return locations[max];
-	} else if(locations[cut].chance > humanNumber) { // recursively call 
+	} else if(humanNumber < locations[cut].chance) { // recursively call 
 		return findLocation(min+1, cut-1);
 	} else {
 		return findLocation(cut+1, max-1);
@@ -325,11 +311,11 @@ function findLocation(humanNumber, min=0, max=locations.length-1) {
 }
 
 function generateAllForOneMeter(meter) {
-    // electric gas
-    const energyType = meter.consumptionType==='electric'?'elec':'gas';
-
-    // s20 s50 s70 s100
-    const surface = 's'+meter.houseType;
+	/*
+	*  energyType = meter.consumptionType==='electric'?'elec':'gas';
+	*  surface = 's'+meter.houseType;
+	*/
+	const subConfig = CONFIG.DataConsumption[meter.consumptionType==='electric'?'elec':'gas']['s'+meter.houseType];
 
     // region ratio
     let climat = CONFIG.climats.Oceanic;
@@ -386,19 +372,19 @@ function generateAllForOneMeter(meter) {
 	        dayOfWeek = (dateDay!=='Sunday' && dateDay!=='Saturday') ? 'wDay' : 'wEnd';
     	}
 
-        let consumptionTime = 'Evening';
+        let dayTime = 'Evening';
         if(dateHour <= 6) {
-            consumptionTime = 'Night'; // Night (00h -> 9H)
+            dayTime = 'Night'; // Night (00h -> 9H)
         } else if(dateHour <=  9) {
-            consumptionTime = 'Morning';  // Morning (6h -> 9h)
+            dayTime = 'Morning';  // Morning (6h -> 9h)
         } else if(dateHour <=  17) {
-            consumptionTime = 'Day'; // Day (9h -> 17h)
+            dayTime = 'Day'; // Day (9h -> 17h)
         } /*else {
-            consumptionTime = 'Evening';  // Evening(17h -> 23h59)
+            dayTime = 'Evening';  // Evening(17h -> 23h59)
         }*/
 
-        const avg = CONFIG.DataConsumption[season][dayOfWeek][consumptionTime][energyType][surface].avg * climat[season].RatioAvg;
-        const stdev = CONFIG.DataConsumption[season][dayOfWeek][consumptionTime][energyType][surface].stddev * climat[season].RatioStddev;
+        const avg = subConfig[season][dayOfWeek][dayTime].avg * climat[season].RatioAvg;
+        const stdev = subConfig[season][dayOfWeek][dayTime].stddev * climat[season].RatioStddev;
         const curr_conso = rand.rnorm(avg, stdev) / (1440 / MINUTES_INTERVAL);
 
         // Calculate the Consumption in zone hight cost or low cost
