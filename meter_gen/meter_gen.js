@@ -178,38 +178,42 @@ if(wantSeparateFile) {
 // Check filePath
 // 
 
-
-// Build DataConsumption structure
-let locations = [];
-let sumPopulation = 0;
-const kmLongitude = (360/6378);
-const kmLatitude = (360/6357);
-const CONFIG = getConfig();
-[locations, sumPopulation] = getLocations();
-
 //
 // Generating Meters information
-for(let i=NB_METERS-1; i>=0; i--) {
-	const cityRandomIndex = Math.random() * sumPopulation;
-	const city = findLocation(cityRandomIndex); // city: {country,region,city,lattitude,longitude,radius,chance}
+let metersTab = [];
+{	const locations = [];
+	const sumPopulation = getLocations(locations);
+	const kmLongitude = (360/6378);
+	const kmLatitude = (360/6357);
 
-    const meter = {
-		vid: 	   'METER' + ('00000' + i).slice(-6),
-        houseType: chooseBetween([20, 50, 70, 100]), // chose one of the possibilities randomly, to Json, into houseType
-        region:    city.region,
-        city: 	   city.name,
-        latitude:  (city.latitude + (Math.random()*city.radius*2 -city.radius)*kmLatitude).toFixed(6), // add randomized lattitude
-        longitude: (city.longitude + (Math.random()*city.radius*2 -city.radius)*kmLongitude).toFixed(6), // add randomized longitude
-    };
+	for(let i=NB_METERS-1; i>=0; i--) {
+		const humanIndex = Math.random() * sumPopulation;
+		const city = findLocation(humanIndex, locations); // city: {country,region,city,lattitude,longitude,radius,chance}
 
-    if(TYPE === 'mixed')
-        meter.consumptionType = chooseBetween(['electric', 'gas']);
-    else /*if(TYPE === 'electric' || TYPE === 'gas')*/
-        meter.consumptionType = TYPE;
+	    const meter = {
+			vid: 	   'METER' + ('00000' + i).slice(-6),
+	        houseType: chooseBetween(20, 50, 70, 100), // chose one of the possibilities randomly, to Json, into houseType
+	        region:    city.region,
+	        city: 	   city.name,
+	        latitude:  city.latitude + (Math.random()*city.radius*2 -city.radius)*kmLatitude, // add randomized lattitude
+	        longitude: city.longitude + (Math.random()*city.radius*2 -city.radius)*kmLongitude, // add randomized longitude
+	    };
 
-    // Add data to files for this meter
-    generateAllForOneMeter(meter);
+	    if(TYPE === 'mixed')
+	        meter.consumptionType = chooseBetween('electric', 'gas');
+	    else
+	        meter.consumptionType = TYPE;
+
+	    // Add data to files for this meter
+	    metersTab.push(meter);
+	}
 }
+// Build DataConsumption structure
+const CONFIG = getConfig();
+
+while(metersTab.length > 0)
+    generateAllForOneMeter(metersTab.shift());
+
 
 // close files
 while(openFiles.length > 0) {
@@ -225,7 +229,7 @@ while(openFiles.length > 0) {
 /** 
  * return one of the values of the table passed in parameter, randomly choosen 
 **/
-function chooseBetween(tab) {
+function chooseBetween(...tab) {
     return tab[(Math.random()*tab.length)|0];
 }
 
@@ -266,14 +270,14 @@ function getConfig() {
 	return config;
 }
 
-function getLocations() {
+function getLocations(locations) {
 	let locationsFile = require('./locations.json');
 
 	// count total population
-	let locations = [];
 	let curr_chance = 0;
+	let curr_loc;
 	while(locationsFile.length > 0) {
-		let curr_loc = locationsFile.shift();
+		curr_loc = locationsFile.shift();
 		if(curr_loc.population<1 || curr_loc.density===0)
 			continue;
 
@@ -289,25 +293,33 @@ function getLocations() {
 		});
 	}
 
-	return [locations, curr_chance];
+	return curr_chance;
 }
 
-function findLocation(humanNumber, min=0, max=locations.length-1) {
-	if(min >= max)
-		return locations[min];
+function findLocation(humanNumber, locations) {
+	let min = 0;
+	let max = locations.length;
+	let cut;
 
-	const cut = ((max-min)/2)|0;
-	if(locations[cut].chance === humanNumber) { // if is the cut
-		return locations[cut];
-	} else if(humanNumber <= locations[min].chance) { // if is the minimum
-		return locations[min];
-	} else if(humanNumber > locations[max-1].chance) { // if is the maximum
-		return locations[max];
-	} else if(humanNumber < locations[cut].chance) { // recursively call 
-		return findLocation(min+1, cut-1);
-	} else {
-		return findLocation(cut+1, max-1);
+	while(min < max) {
+		cut = ((max-min)/2)|0;
+
+		if(locations[cut].chance === humanNumber) { // if is the cut
+			return locations[cut];
+		} else if(humanNumber <= locations[min].chance) { // if is the minimum
+			return locations[min];
+		} else if(humanNumber > locations[max-1].chance) { // if is the maximum
+			return locations[max];
+		} else if(humanNumber < locations[cut].chance) { // recursively call 
+			min++;
+			max = cut-1;
+		} else {
+			min = cut+1;
+			max--;
+		}
 	}
+
+	return locations[min];
 }
 
 function generateAllForOneMeter(meter) {
