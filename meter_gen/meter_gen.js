@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-04-20
+ * @Last Modified time: 2017-04-21
  *
  * Usage : 
  * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gaz, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
@@ -24,25 +24,15 @@
 
 //
 // Libraries and external files
-var async = require("async");
 var moment = require('moment');
 var fs = require('fs');
-var rand = require('randgen');
+var Rand = require('randgen');
 // Libraries and external files
 // 
 
 // Speed-up meter_gen, using more memory to save time
-var openFiles = [];
+var openFiles = new Map(); // {fileName1:fileDescriptor, fileName2:fileDescriptor...}
 
-
-//
-// Defining constants
-const MAX_RANDOM_INDEX = 1000;
-const MAX_RANDOM_TEMP = 35;
-const TOTAL_DENSITY = 486;
-const TOTAL_POPULATION = 64886015;
-// Defining constants
-//
 
 //
 // Defining parameters variables
@@ -178,47 +168,88 @@ if(wantSeparateFile) {
 // Check filePath
 // 
 
+
+const CONFIG = getConfig(); // Build DataConsumption structure
+const MAX_RANDOM_TEMP = 35; // for temperature random
+
 //
 // Generating Meters information
 let metersTab = [];
 {	const locations = [];
 	const sumPopulation = getLocations(locations);
-	const kmLongitude = (360/6378);
-	const kmLatitude = (360/6357);
+	const kmToLat = 0.00901329460; // 360/39941 = ( 360° / Earth circumference (polar) in km ) 
+	const kmToLon = 0.00898315658; // 360/40075 = ( 360° / Earth circumference (equator) in km )
 
 	for(let i=NB_METERS-1; i>=0; i--) {
 		const humanIndex = Math.random() * sumPopulation;
 		const city = findLocation(humanIndex, locations); // city: {country,region,city,lattitude,longitude,radius,chance}
+	    const meter = {};
 
-	    const meter = {
-			vid: 	   'METER' + ('00000' + i).slice(-6),
-	        houseType: chooseBetween(20, 50, 70, 100), // chose one of the possibilities randomly, to Json, into houseType
-	        region:    city.region,
-	        city: 	   city.name,
-	        latitude:  city.latitude + (Math.random()*city.radius*2 -city.radius)*kmLatitude, // add randomized lattitude
-	        longitude: city.longitude + (Math.random()*city.radius*2 -city.radius)*kmLongitude, // add randomized longitude
-	    };
+	    // region ratio
+	    if(CONFIG.climatZone.FRA.Mountains.has(city.region)) { // Mountains
+	        meter.climat = 'Mountains';
+	    } else if(CONFIG.climatZone.FRA.Continental.has(city.region)) { // Continental
+	        meter.climat = 'Continental';
+	    } else if(CONFIG.climatZone.FRA.Mediteranean.has(city.region)) { // Mediteranean
+	        meter.climat = 'Mediteranean';
+	    } else /*if(CONFIG.climatZone.FRA.Oceanic.has(meters.region))*/ { // Oceanic
+	        meter.climat = 'Oceanic';
+	    }
 
-	    if(TYPE === 'mixed')
-	        meter.consumptionType = chooseBetween('electric', 'gas');
-	    else
-	        meter.consumptionType = TYPE;
+	    let houseSurface = chooseBetween(20, 50, 70, 100);
+	    let consumptionType;
+	    switch(TYPE) {
+    	case 'mixed':
+        	consumptionType = chooseBetween('elec', 'gas');
+        	break;
+    	case 'electric':
+        	consumptionType = 'elec';
+        	break;
+    	case 'gas': /* falls through */
+    	default:
+        	consumptionType = 'gas';
+	    }
+
+		meter.line = [
+			FROM.format(),
+			0, // conso
+	        0, // highcost
+	        0, // lowcost
+	        consumptionType,
+	        'METER' + ('00000' + i).slice(-6),
+	       	houseSurface
+	    ];
+	    if(wantTemperature)
+	        meter.line.push(0);
+
+	    if(wantLocation) {
+	    	// ÷2 (stddev should be radius/2)
+	    	const latitude =  Rand.rnorm(city.latitude, city.radius*kmToLat/2);
+	        const longitude = Rand.rnorm(city.longitude, city.radius*kmToLon/2);
+
+	        meter.line.push(city.name);
+	        meter.line.push(latitude.toFixed(6));
+	        meter.line.push(longitude.toFixed(6));
+	    }
 
 	    // Add data to files for this meter
 	    metersTab.push(meter);
 	}
-}
-// Build DataConsumption structure
-const CONFIG = getConfig();
 
+	TYPE = null; // free 'Type' variable
+	NB_METERS = null; // free 'NB_METERS' variable
+}
+// Generating Meters information
+// 
+
+
+// Generate Data
 while(metersTab.length > 0)
     generateAllForOneMeter(metersTab.shift());
 
 
 // close files
-while(openFiles.length > 0) {
-	closeFile(openFiles[0]);
-}
+openFiles.forEach(closeFile);
 
 //  //  //  //  // Execution End //  //  //  //  //
 //      //      //               //      //      //
@@ -233,31 +264,35 @@ function chooseBetween(...tab) {
     return tab[(Math.random()*tab.length)|0];
 }
 
-function openFile(fileName) {
-	if(openFiles.indexOf(fileName) >= 0)
-		return;
+function getFile(fileName, createIfNotExists=true) {
+	if(openFiles.has(fileName))
+		return openFiles.get(fileName);
 
-	openFiles.push(fileName);
+	if(!createIfNotExists)
+		return null;
+
+	const fileDescriptor = fs.openSync(fileName, 'w');
+	openFiles.set(fileName, fileDescriptor);
 
 	const firstLine = ['date,index,sumHC,sumHP,type,vid,size'];
 	if(wantTemperature)
 		firstLine.push('temp');
 	if(wantLocation)
 		firstLine.push('city,lat,long');
-	fs.writeFileSync(fileName, firstLine+'\n');
+
+	appendToFile(fileName, firstLine); // should be after 'openFiles.set' to not have infinite recursive loop
+
+	return fileDescriptor;
 }
 
 function appendToFile(fileName, tab) {
-	if(openFiles.indexOf(fileName) < 0)
-		openFile(fileName);
-
-	fs.appendFileSync(fileName, tab.join(',')+'\n');
+	fs.appendFileSync(getFile(fileName), tab.join(',')+'\n', 'utf-8');
 }
 
-function closeFile(fileName) {
-	let index = openFiles.indexOf(fileName);
-	if(index >= 0)
-		openFiles.splice(index, 1);
+function closeFile(fileDescriptor, fileName) {
+	if(fileDescriptor)
+		fs.close(fileDescriptor);
+	openFiles.delete(fileName);
 }
 
 function getConfig() {
@@ -286,9 +321,9 @@ function getLocations(locations) {
 			country: curr_loc.country, // "FRA"
 			region: curr_loc.region, // 6
 			name: curr_loc.city, // "Nice"
-			lattitude: curr_loc.lattitude, // 43.7
+			latitude: curr_loc.latitude, // 43.7
 			longitude: curr_loc.longitude, // 7.25
-			radius: Math.sqrt(Math.PI*curr_loc.population / curr_loc.density), // pop:343304 dens:4773 => radius of 4.78485496485km
+			radius: Math.sqrt(curr_loc.population / (Math.PI*curr_loc.density)), // pop:343304 dens:4773 => radius of 4.78485496485km
 			chance: curr_chance
 		});
 	}
@@ -302,7 +337,7 @@ function findLocation(humanNumber, locations) {
 	let cut;
 
 	while(min < max) {
-		cut = ((max-min)/2)|0;
+		cut = (max+min)>>1;
 
 		if(locations[cut].chance === humanNumber) { // if is the cut
 			return locations[cut];
@@ -327,53 +362,17 @@ function generateAllForOneMeter(meter) {
 	*  energyType = meter.consumptionType==='electric'?'elec':'gas';
 	*  surface = 's'+meter.houseType;
 	*/
-	const subConfig = CONFIG.DataConsumption[meter.consumptionType==='electric'?'elec':'gas']['s'+meter.houseType];
-
-    // region ratio
-    let climat = CONFIG.climats.Oceanic;
-    if(CONFIG.climatZone.FRA.Mountains.has(meter.region)) { // Mountains
-        climat = CONFIG.climats.Mountains;
-    } else if(CONFIG.climatZone.FRA.Continental.has(meter.region)) { // Continental
-        climat = CONFIG.climats.Continental;
-    } else if(CONFIG.climatZone.FRA.Mediteranean.has(meter.region)) { // Mediteranean
-        climat = CONFIG.climats.Mediteranean;
-    } /*else if(CONFIG.climatZone.FRA.Oceanic.has(meters.region)) { // Oceanic
-        climat = CONFIG.climats.Oceanic;
-    }*/
-
-    const line = [
-		FROM.format(),
-		0, // conso
-        0, // highcost
-        0, // lowcost
-        meter.consumptionType,
-        meter.vid,
-        meter.houseType
-    ];
-
-    if(wantTemperature)
-        line.push(0);
-
-    if(wantLocation) {
-        line.push(meter.city);
-        line.push(meter.latitude);
-        line.push(meter.longitude);
-    }
-
-    meter = null; // free Meter
+	const subConfig = CONFIG.DataConsumption[meter.line[4]]['s'+meter.line[6]]; // DataConsumption[consumptionType][houseSurface]
 
     let lastDateHour = 25; // force nextDay for first date
     let season;
     let dayOfWeek;
-    let conso = 0;
-    let highcost;
-    let lowcost;
 
     for(let d=moment(FROM); d<=TO; d.add(MINUTES_INTERVAL, 'minutes')) { // For each period of time
     	const dateHour = d.format('HH')|0;
     	if(lastDateHour > dateHour) { // next day 
-    		highcost = 0;
-	        lowcost = 0;
+    		meter.highcost = 0;
+	        meter.lowcost = 0;
 
 	        // Hot season (March -> November)
 	    	const dateMonth = d.format('MM')|0;
@@ -395,30 +394,26 @@ function generateAllForOneMeter(meter) {
             dayTime = 'Evening';  // Evening(17h -> 23h59)
         }*/
 
-        const avg = subConfig[season][dayOfWeek][dayTime].avg * climat[season].RatioAvg;
-        const stdev = subConfig[season][dayOfWeek][dayTime].stddev * climat[season].RatioStddev;
-        const curr_conso = rand.rnorm(avg, stdev) / (1440 / MINUTES_INTERVAL);
+        const avg = subConfig[season][dayOfWeek][dayTime].avg * CONFIG.climats[meter.climat][season].RatioAvg;
+        const stdev = subConfig[season][dayOfWeek][dayTime].stddev * CONFIG.climats[meter.climat][season].RatioStddev;
+        const curr_conso = Rand.rnorm(avg, stdev) / (1440 / MINUTES_INTERVAL);
 
         // Calculate the Consumption in zone hight cost or low cost
         if(dateHour>6 || dateHour<22)
-            highcost += curr_conso*0.001; // convert to KWh
+            meter.line[3] += curr_conso*0.001; // highcost, convert to KWh
         else
-            lowcost += curr_conso*0.001; // convert to KWh
+            meter.line[2] += curr_conso*0.001; // lowcost, convert to KWh
 
-        conso += curr_conso;
-
-        line[0] = d.format();
-        line[1] = conso;
-        line[2] = lowcost;
-        line[3] = highcost;
+        meter.line[1] += curr_conso; // conso
+        meter.line[0] = d.format();
 
         if(wantTemperature) 
-        	line[7] = (Math.random()*MAX_RANDOM_TEMP).toFixed(2);
+        	meter.line[7] = (Math.random()*MAX_RANDOM_TEMP).toFixed(2);
 
         if(wantSeparateFile) {
-        	appendToFile(filePath + d.format('YYYY_MM_DD-HH_mm_ss') + '.csv', line);
+        	appendToFile(filePath + d.format('YYYY_MM_DD-HH_mm_ss') + '.csv', meter.line);
         } else {
-	       	appendToFile(filePath, line);
-    	}
+	       	appendToFile(filePath, meter.line);
+		}
     }
 }

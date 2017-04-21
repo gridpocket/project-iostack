@@ -1,7 +1,7 @@
 # @Author: Nathaël Noguès
 # @Date:   2017-04-14
 # @Last Modified by:   Nathaël Noguès
-# @Last Modified time: 2017-04-20
+# @Last Modified time: 2017-04-21
 
 echo 'TEST AS 1FILE'
 
@@ -139,7 +139,7 @@ ts=$(date +%s%N)
 node meter_gen.js 100 '2016/01/01' '2017/01/01' 30 mixed -location -separateFiles -temp -out './perfTest/12m-100u/'
 tmps=$((($(date +%s%N) - $ts)/1000000))
 size=$(du -sb './perfTest/12m-100u/')
-rm -r './perfTest/12m-100u.csv' &
+rm -r './perfTest/12m-100u/' &
 echo "Time: $tmps, Size: $size"
 
 
