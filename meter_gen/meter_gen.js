@@ -13,7 +13,7 @@
  * @Last Modified time: 2017-04-21
  *
  * Usage : 
- * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gaz, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
+ * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gas, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
  * 
  * Example usage: 
  * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFiles -location
@@ -41,7 +41,7 @@ var FROM;
 var TO;
 var MINUTES_INTERVAL;
 var TYPE;
-var wantSeparateFile = false;
+var wantSeparateFile = -1;
 var wantTemperature = false;
 var wantLocation = false;
 var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
@@ -50,18 +50,35 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 
 //
 // Parsing arguments
-{	let args = process.argv.slice(2);
+{	const usageMessage = `Usage:
+  node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-separateFiles (interval)) (-temp) (-location) (-out [filePath])
+
+- Meters number (integer): 1 to 1000000 (1Milion)
+- Date begin (string): date formatted as 'yyyy/mm/dd'
+- Date end (string): date formatted as 'yyyy/mm/dd'), should be after date begin (or equal if you need only 1 data by meter)
+- Data interval (integer): Minimum 1, number of minutes between each data from the same meter
+- Meter type (string): sould be 'electric', 'gas' or 'mixed' (mixed: Meters will be one of electric or gas randomly chosen)
+- Options:
+      '-separateFiles' (without argument):
+      		equivalent to '-separateFiles 1'
+      '-separateFiles 0': 
+      		data will be generated in multiple files as all data from different meters would be in different files
+      '-separateFiles x' (with 'x' is an integer >=1): 
+      		data will be generated in multiple files as all data generated in each 'x' data intevals will be in the same file 
+      '-temp':
+      		add external temperature of meter for each data
+      '-location':
+      		add location information for each data (city name, longitude and latitude of where the meter is)
+      '-out path/to/file.csv':
+      		specify the path of the generated file (in the case of non -separateFiles)
+      '-out path/to/folder/':
+      		specify the path of the folder that will contains generated files (in the case of -separateFiles)
+`;
+
+	let args = process.argv.slice(2);
 
 	if(args < 5) {
-		console.log('Usage: \n'+
-					'	node meter_gen [meters number (1 to 1M)] '+
-									  "[date begin 'yyyy/mm/dd'] "+
-									  "[date end 'yyyy/mm/dd'] "+
-									  '[data interval (in minutes)] '+
-									  "[data type ('gaz, 'electric' or 'mixed')] "+
-									  '(-separateFiles) '+
-									  '(-temp) '+
-									  '(-location)');
+		console.log(usageMessage);
 		process.exit(-1); // not enough arguments
 	}
 
@@ -70,35 +87,39 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 	let arg = args.shift(); // arg1
 	NB_METERS = arg|0;
 	if(NB_METERS <= 0 || NB_METERS > 1000000) {
-	    console.log('ERROR: Number of meters should be between 1 and 1 millions (you put', arg+')');
+	    console.log('ERROR: Number of meters should be between 1 and 1 millions (arg was "', arg+'"")');
 	    errNb++;
 	}
 
 	arg = args.shift(); // arg2
 	FROM = moment(arg, 'YYYY/MM/DD');
 	if(!moment(arg, 'YYYY/MM/DD', true).isValid()) {
-	    console.log('ERROR: Check your begining date, should be in format yyyy/mm/dd (you put', arg+')');
+	    console.log('ERROR: Check your begining date, should be in format yyyy/mm/dd (arg was "', arg+'"")');
 	    errNb++;
 	}
 
 	arg = args.shift(); // arg3
 	TO = moment(arg, 'YYYY/MM/DD');
 	if(!moment(arg, 'YYYY/MM/DD', true).isValid()) {
-	    console.log('ERROR: Check your end date, should be in format yyyy/mm/dd (you put', arg+')');
+	    console.log('ERROR: Check your end date, should be in format yyyy/mm/dd (arg was "', arg+'"")');
 	    errNb++;
+	}
+	if(TO < FROM) {
+		console.log('ERROR: the end date should be equal or after the begining date.');
+		errNb++;
 	}
 
 	arg = args.shift(); // arg4
 	MINUTES_INTERVAL = arg|0;
 	if(MINUTES_INTERVAL <= 0) {
-	    console.log('ERROR: interval of minute should be a positive integer (you put', arg+')');
+	    console.log('ERROR: interval of minute should be a positive integer (arg was "', arg+'"")');
 	    errNb++;
 	}
 
 	arg = args.shift(); // arg5
 	TYPE = arg;
 	if(TYPE !== 'electric' && TYPE !== 'gas' && TYPE !== 'mixed') {
-	    console.log("ERROR: choose between 'electric', 'gas' or 'mixed' (you put", arg+')');
+	    console.log("ERROR: choose between 'electric', 'gas' or 'mixed' (arg was \"", arg+'"")');
 	    errNb++;
 	}
 
@@ -107,7 +128,17 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 		arg = args.shift();
 		switch(arg) {
 			case '-separateFiles':
-				wantSeparateFile = true;
+				if(args.length < 1 || String(args[1])[0]==='-') {
+					wantSeparateFile = 1;
+				} else {
+					wantSeparateFile = args.shift();
+					if(isNaN(wantSeparateFile) || wantSeparateFile<0) {
+	    				console.log("ERROR: -separateFiles need a positive integer as argument (arg was \"", wantSeparateFile+'"")');
+	    				errNb++;
+					} else {
+						wantSeparateFile = wantSeparateFile|0;
+					}
+				}
 				break;
 			case '-temp':
 				wantTemperature = true;
@@ -130,15 +161,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 	}
 
 	if(errNb > 0) {
-		console.log('Usage: \n'+
-				'	node meter_gen [meters number (1 to 1M)] '+
-								  "[date begin 'yyyy/mm/dd'] "+
-								  "[date end 'yyyy/mm/dd'] "+
-								  '[data interval (in minutes)] '+
-								  "[data type ('gaz, 'electric' or 'mixed')] "+
-								  '(-separateFiles) '+
-								  '(-temp) '+
-								  '(-location)');
+		console.log(usageMessage);
 		process.exit(-2); // Argument error
 	}
 } // free 'arg', 'args' and 'errNb' variables
@@ -147,13 +170,22 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 
 //
 // Check filePath
-if(wantSeparateFile) {
+if(wantSeparateFile !== -1) {
 	if(!filePath.endsWith('/'))
 		filePath += '/';
 
 	try {
-		fs.mkdirSync(filePath);
-	} catch (e) { /* ignored */ }
+		filePath.split('/')
+		  .reduce((path, folder) => {
+		  	path += folder + '/';
+		  	if (!fs.existsSync(path)) {
+		  		fs.mkdirSync(path);
+		  	}
+		  	return path;
+		  }, '');
+	} catch (e) { /* ignored */ 
+		console.log('Mkdir failed:', e);
+	}
 } else {
 	if(filePath.endsWith('/'))
 		filePath += 'meter_gen.csv';
@@ -368,6 +400,8 @@ function generateAllForOneMeter(meter) {
     let season;
     let dayOfWeek;
 
+    const meterFileName = (wantSeparateFile===0)?filePath + meter.line[5] + '.csv':null;
+
     for(let d=moment(FROM); d<=TO; d.add(MINUTES_INTERVAL, 'minutes')) { // For each period of time
     	const dateHour = d.format('HH')|0;
     	if(lastDateHour > dateHour) { // next day 
@@ -410,10 +444,21 @@ function generateAllForOneMeter(meter) {
         if(wantTemperature) 
         	meter.line[7] = (Math.random()*MAX_RANDOM_TEMP).toFixed(2);
 
-        if(wantSeparateFile) {
-        	appendToFile(filePath + d.format('YYYY_MM_DD-HH_mm_ss') + '.csv', meter.line);
-        } else {
+        if(wantSeparateFile<0) {
 	       	appendToFile(filePath, meter.line);
+	    } else if(wantSeparateFile===0) {
+        	appendToFile(meterFileName, meter.line);
+        } else {
+        	let fileMoment = d.valueOf() - FROM.valueOf(); // to have the first file number equivalent to the FROM
+        	fileMoment /= 60000*MINUTES_INTERVAL*wantSeparateFile; // divide by wanted interval numbers
+        	fileMoment |= 0; // parseInt to get the interval number
+        	fileMoment *= 60000*MINUTES_INTERVAL*wantSeparateFile; // find the date corresponding to the file number
+        	fileMoment = moment(FROM.valueOf()+fileMoment).format('YYYY_MM_DD-HH_mm_ss'); // to string
+
+        	appendToFile(filePath + fileMoment + '.csv', meter.line);
 		}
     }
+
+    if(wantSeparateFile===0)
+    	closeFile(getFile(meterFileName), meterFileName);
 }

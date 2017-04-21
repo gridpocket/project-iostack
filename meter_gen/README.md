@@ -5,11 +5,11 @@ All data (indexes, temperature, locations) is random.
 This application accepts following paramenters :
 - number of meters to be simulated
 - period of simulation from - to
-- interval between measuring points
-- type of consumption
+- interval between measuring points (in minutes)
+- type of consumption (electric or gas)
 - availability of external temperature
 - availability of location data
-- separation of files for each user
+- files separation mode (one file by user, or one file by x measuring point)
 
 The result files are location in /out 
 
