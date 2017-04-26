@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-04-21
+ * @Last Modified time: 2017-04-24
  *
  * Usage : 
  * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gas, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
@@ -207,14 +207,16 @@ const MAX_RANDOM_TEMP = 35; // for temperature random
 //
 // Generating Meters information
 let metersTab = [];
-{	const locations = [];
-	const sumPopulation = getLocations(locations);
+{	const locations = getLocations(NB_METERS);
 	const kmToLat = 0.00901329460; // 360/39941 = ( 360° / Earth circumference (polar) in km ) 
 	const kmToLon = 0.00898315658; // 360/40075 = ( 360° / Earth circumference (equator) in km )
 
 	for(let i=NB_METERS-1; i>=0; i--) {
-		const humanIndex = Math.random() * sumPopulation;
-		const city = findLocation(humanIndex, locations); // city: {country,region,city,lattitude,longitude,radius,chance}
+		const city = locations[0]; // city: {country,region,city,lattitude,longitude,radius,pop}
+
+		if((--locations[0].pop)<=0)
+			locations.shift();
+
 	    const meter = {};
 
 	    // region ratio
@@ -234,12 +236,12 @@ let metersTab = [];
     	case 'mixed':
         	consumptionType = chooseBetween('elec', 'gas');
         	break;
-    	case 'electric':
-        	consumptionType = 'elec';
-        	break;
-    	case 'gas': /* falls through */
-    	default:
+    	case 'gas':
         	consumptionType = 'gas';
+        	break;
+    	case 'electric': /* falls through */
+    	default:
+        	consumptionType = 'elec';
 	    }
 
 		meter.line = [
@@ -270,7 +272,7 @@ let metersTab = [];
 
 	TYPE = null; // free 'Type' variable
 	NB_METERS = null; // free 'NB_METERS' variable
-}
+} // free 'locations' variable
 // Generating Meters information
 // 
 
@@ -337,18 +339,19 @@ function getConfig() {
 	return config;
 }
 
-function getLocations(locations) {
+function getLocations(totalPop) {
 	let locationsFile = require('./locations.json');
+	let sum_pop = 0;
+	const locations = [];
 
-	// count total population
-	let curr_chance = 0;
+	// compute sum_pop
 	let curr_loc;
 	while(locationsFile.length > 0) {
 		curr_loc = locationsFile.shift();
-		if(curr_loc.population<1 || curr_loc.density===0)
+		if(curr_loc.population<1)
 			continue;
 
-		curr_chance += curr_loc.population; // ...+343304
+		sum_pop += curr_loc.population; // ...+343304
 		locations.push({
 			country: curr_loc.country, // "FRA"
 			region: curr_loc.region, // 6
@@ -356,37 +359,22 @@ function getLocations(locations) {
 			latitude: curr_loc.latitude, // 43.7
 			longitude: curr_loc.longitude, // 7.25
 			radius: Math.sqrt(curr_loc.population / (Math.PI*curr_loc.density)), // pop:343304 dens:4773 => radius of 4.78485496485km
-			chance: curr_chance
+			pop: curr_loc.population
 		});
 	}
 
-	return curr_chance;
-}
-
-function findLocation(humanNumber, locations) {
-	let min = 0;
-	let max = locations.length;
-	let cut;
-
-	while(min < max) {
-		cut = (max+min)>>1;
-
-		if(locations[cut].chance === humanNumber) { // if is the cut
-			return locations[cut];
-		} else if(humanNumber <= locations[min].chance) { // if is the minimum
-			return locations[min];
-		} else if(humanNumber > locations[max-1].chance) { // if is the maximum
-			return locations[max];
-		} else if(humanNumber < locations[cut].chance) { // recursively call 
-			min++;
-			max = cut-1;
-		} else {
-			min = cut+1;
-			max--;
-		}
+	let sum_pop2 = totalPop;
+	for(let i=locations.length-1; i>=0; i--) {
+		locations[i].pop = (locations[i].pop * totalPop / sum_pop)|0;
+		sum_pop2 -= locations[i].pop;
 	}
 
-	return locations[min];
+	while(sum_pop2 > 0) {
+		locations[(Math.random()*locations.length)|0].pop ++;
+		sum_pop2--;
+	}
+
+	return locations.filter(l=>l.pop > 0);
 }
 
 function generateAllForOneMeter(meter) {
