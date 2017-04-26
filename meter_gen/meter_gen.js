@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-04-24
+ * @Last Modified time: 2017-04-26
  *
  * Usage : 
  * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gas, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
@@ -62,11 +62,13 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
       '-separateFiles' (without argument):
       		equivalent to '-separateFiles 1'
       '-separateFiles 0': 
-      		data will be generated in multiple files as all data from different meters would be in different files
+      		to generate data in multiple files, as in each file there is all the data from only one user
+      		(there will be as files as meters)
       '-separateFiles x' (with 'x' is an integer >=1): 
-      		data will be generated in multiple files as all data generated in each 'x' data intevals will be in the same file 
+      		generate multiple files as in each file, there is 'x' data by user
       '-temp':
       		add external temperature of meter for each data
+      		(currently returning random values as temperature)
       '-location':
       		add location information for each data (city name, longitude and latitude of where the meter is)
       '-out path/to/file.csv':
@@ -128,7 +130,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 		arg = args.shift();
 		switch(arg) {
 			case '-separateFiles':
-				if(args.length < 1 || String(args[1])[0]==='-') {
+				if(args.length < 1 || String(args[0])[0]==='-') {
 					wantSeparateFile = 1;
 				} else {
 					wantSeparateFile = args.shift();
@@ -407,11 +409,11 @@ function generateAllForOneMeter(meter) {
 
         let dayTime = 'Evening';
         if(dateHour <= 6) {
-            dayTime = 'Night'; // Night (00h -> 9H)
+            dayTime = 'Night'; // Night (00h -> 06H)
         } else if(dateHour <=  9) {
-            dayTime = 'Morning';  // Morning (6h -> 9h)
+            dayTime = 'Morning';  // Morning (06h -> 09h)
         } else if(dateHour <=  17) {
-            dayTime = 'Day'; // Day (9h -> 17h)
+            dayTime = 'Day'; // Day (09h -> 17h)
         } /*else {
             dayTime = 'Evening';  // Evening(17h -> 23h59)
         }*/
