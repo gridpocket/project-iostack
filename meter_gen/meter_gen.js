@@ -10,13 +10,13 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-04-26
+ * @Last Modified time: 2017-04-27
  *
  * Usage : 
- * 	node meter_gen [meters number (1 to 1M)] [date begin 'yyyy/mm/dd'] [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gas, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
+ * 	node meter_gen [meters number] [date begin [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gas, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
  * 
  * Example usage: 
- * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFiles -location
+ * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFiles 1 -location
 **/
 
 /*jshint esversion: 6 */
@@ -44,6 +44,8 @@ var TYPE;
 var wantSeparateFile = -1;
 var wantTemperature = false;
 var wantLocation = false;
+var wantMaxFileSize = false;
+var curFileSize=0, fileNb=1; // for maxFileSize
 var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 // Defining parameters variables
 //  
@@ -51,7 +53,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 //
 // Parsing arguments
 {	const usageMessage = `Usage:
-  node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-separateFiles (interval)) (-temp) (-location) (-out [filePath])
+  node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-temp) (-location) (-out [filePath])
 
 - Meters number (integer): 1 to 1000000 (1Milion)
 - Date begin (string): date formatted as 'yyyy/mm/dd'
@@ -59,6 +61,15 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 - Data interval (integer): Minimum 1, number of minutes between each data from the same meter
 - Meter type (string): sould be 'electric', 'gas' or 'mixed' (mixed: Meters will be one of electric or gas randomly chosen)
 - Options:
+	  '-maxFileSize size': (cannot be cumulated with separateFiles)
+	  		will generate multiple files such as no generated files size is more than 'x'
+
+	  		> 'size' is an integer followed by 'k', 'M' or 'G' (like '5G' meaning 5 GigaBytes)
+	  		Note that '-maxFileSize 1M' = '-maxFileSize 1024k',
+	  		          '-maxFileSize 1G' = '-maxFileSize 1024M'
+	  		Minimum: 1 kB (1k)
+	  		Maximum 8,388,608 GB (8388608G)
+
       '-separateFiles' (without argument):
       		equivalent to '-separateFiles 1'
       '-separateFiles 0': 
@@ -66,11 +77,14 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
       		(there will be as files as meters)
       '-separateFiles x' (with 'x' is an integer >=1): 
       		generate multiple files as in each file, there is 'x' data by user
+
       '-temp':
       		add external temperature of meter for each data
       		(currently returning random values as temperature)
+
       '-location':
       		add location information for each data (city name, longitude and latitude of where the meter is)
+
       '-out path/to/file.csv':
       		specify the path of the generated file (in the case of non -separateFiles)
       '-out path/to/folder/':
@@ -129,6 +143,32 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 	while(args.length > 0) {
 		arg = args.shift();
 		switch(arg) {
+			case '-maxFileSize':
+				if(args.length < 1) {
+					console.log('ERROR: -maxFileSize need an argument.');
+					errNb++;
+				} else {
+					arg = args.shift();
+					wantMaxFileSize = parseInt(arg); // not working with |0 to get integer
+					if(isNaN(wantMaxFileSize)) {
+						console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
+						errNb++;
+					} if(wantMaxFileSize<=0) {
+						console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
+						errNb++;
+					} else {
+						switch(arg[arg.length-1]) {
+							case 'G': wantMaxFileSize*=1024; /* falls through */
+							case 'M': wantMaxFileSize*=1024; /* falls through */
+							case 'k': wantMaxFileSize*=1024;
+								break;
+							default:
+								console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
+								errNb++;
+						}
+					}
+				}
+				break;
 			case '-separateFiles':
 				if(args.length < 1 || String(args[0])[0]==='-') {
 					wantSeparateFile = 1;
@@ -162,8 +202,13 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 		}
 	}
 
+	if(wantSeparateFile !==-1 && wantMaxFileSize) {
+		console.log('ERROR: Cannot use -separateFiles and -maxFileSize together');
+		errNb++;
+	}
+
 	if(errNb > 0) {
-		console.log(usageMessage);
+		console.log('\n',usageMessage);
 		process.exit(-2); // Argument error
 	}
 } // free 'arg', 'args' and 'errNb' variables
@@ -172,7 +217,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 
 //
 // Check filePath
-if(wantSeparateFile !== -1) {
+if(wantSeparateFile !== -1 || wantMaxFileSize) {
 	if(!filePath.endsWith('/'))
 		filePath += '/';
 
@@ -264,6 +309,7 @@ let metersTab = [];
 	        const longitude = Rand.rnorm(city.longitude, city.radius*kmToLon/2);
 
 	        meter.line.push(city.name);
+	        meter.line.push(city.region);
 	        meter.line.push(latitude.toFixed(6));
 	        meter.line.push(longitude.toFixed(6));
 	    }
@@ -309,20 +355,33 @@ function getFile(fileName, createIfNotExists=true) {
 
 	const fileDescriptor = fs.openSync(fileName, 'w');
 	openFiles.set(fileName, fileDescriptor);
+	curFileSize = 0;
 
 	const firstLine = ['date,index,sumHC,sumHP,type,vid,size'];
 	if(wantTemperature)
 		firstLine.push('temp');
 	if(wantLocation)
-		firstLine.push('city,lat,long');
+		firstLine.push('city,region,lat,long');
 
-	appendToFile(fileName, firstLine); // should be after 'openFiles.set' to not have infinite recursive loop
-
+	if(!appendToFile(fileName, firstLine)) { // should be after 'openFiles.set' to not have infinite recursive loop
+		console.log("ERROR: Head line larger than given Max file size");
+		process.exit(-3);
+	}
 	return fileDescriptor;
 }
 
 function appendToFile(fileName, tab) {
-	fs.appendFileSync(getFile(fileName), tab.join(',')+'\n', 'utf-8');
+	const line = tab.join(',')+'\n';
+
+	const fd = getFile(fileName);
+
+	if(wantMaxFileSize) {
+		curFileSize += Buffer.byteLength(line, 'utf8');
+		if(curFileSize >= wantMaxFileSize)
+			return false;
+	}
+	fs.appendFileSync(fd, line, 'utf-8');
+	return true;
 }
 
 function closeFile(fileDescriptor, fileName) {
@@ -434,7 +493,15 @@ function generateAllForOneMeter(meter) {
         if(wantTemperature) 
         	meter.line[7] = (Math.random()*MAX_RANDOM_TEMP).toFixed(2);
 
-        if(wantSeparateFile<0) {
+        if(wantMaxFileSize) {
+    		if(!appendToFile(filePath + fileNb + '.csv', meter.line)) {
+    			fileNb++;
+    			if(!appendToFile(filePath + fileNb + '.csv', meter.line)) {
+    				console.log("ERROR: Line of data larger than given Max file size");
+    				process.exit(-3);
+    			}
+    		}
+    	} else if(wantSeparateFile<0) {
 	       	appendToFile(filePath, meter.line);
 	    } else if(wantSeparateFile===0) {
         	appendToFile(meterFileName, meter.line);
