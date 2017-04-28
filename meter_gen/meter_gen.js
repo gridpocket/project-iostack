@@ -13,7 +13,7 @@
  * @Last Modified time: 2017-04-28
  *
  * Usage : 
- * 	node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-startID [id]) (-temp) (-location) (-out [filePath])
+ * 	node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-startID [id]) (-lastID [id]) (-temp) (-location) (-out [filePath])
  * 
  * Example usage: 
  * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFiles 1 -location
@@ -50,7 +50,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 //
 // Parsing arguments
 {	const usageMessage = `Usage:
-  node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-startID [id]) (-temp) (-location) (-out [filePath])
+  node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-startID [id]) (-lastID [id]) (-temp) (-location) (-out [filePath])
 
 - Meters number (integer): 1 to 999999
 - Date begin (string): date formatted as 'yyyy/mm/dd'
@@ -213,7 +213,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 					}
 					break;
 				case 'temp':
-					console.log('WARNING: -temp will return random temperatures (not working well)');
+					console.log('WARNING: -temp is not working, and will always put \'20.00\' as temperature');
 					wantTemperature = true;
 					break;
 				case 'location':
