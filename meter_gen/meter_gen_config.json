@@ -4,23 +4,23 @@
       "coldS":{"RatioAvg":0.66,"RatioStddev":1.24},
       "hotS":{"RatioAvg":0.84,"RatioStddev":1.13}
     },"Oceanic":{
-      "coldS":{"RatioAvg":0.66,"RatioStddev":1.24},
-      "hotS":{"RatioAvg":0.84,"RatioStddev":1.13}
+      "coldS":{"RatioAvg":0.87,"RatioStddev":1.00},
+      "hotS":{"RatioAvg":1.03,"RatioStddev":0.98}
     },"Mountains":{
-      "coldS":{"RatioAvg":0.66,"RatioStddev":1.24},
-      "hotS":{"RatioAvg":0.84,"RatioStddev":1.13}
+      "coldS":{"RatioAvg":1.72,"RatioStddev":1.02},
+      "hotS":{"RatioAvg":1.11,"RatioStddev":0.96}
     },"Continental":{
-      "coldS":{"RatioAvg":0.66,"RatioStddev":1.24},
-      "hotS":{"RatioAvg":0.84,"RatioStddev":1.13}
+      "coldS":{"RatioAvg":1.33,"RatioStddev":1.21},
+      "hotS":{"RatioAvg":1.06,"RatioStddev":1.06}
     }
   },
 
   "climatZone":{
     "FRA":{
-      "Mountains":[64,65,9,66,81,12,68,15,23,63,43,42,38,5,73,74,39,25,88,48],
-      "Continental":[1,55,52,70,54,57,67,90,69,20],
+      "Mountains":[5,9,12,15,23,25,38,39,42,43,48,63,64,65,66,68,73,74,81,88],
+      "Continental":[1,20,52,54,55,57,67,69,70,90],
       "Oceanic":[29,22,56,35,44,85,49,79,17,16,33,40,32,82,47,24,46,19,87,53,37,50,14,76,80,62,59,2,8,51,10,89,58,91],
-      "Mediteranean":[7,26,30,84,4,6,83,13,34,31,11]
+      "Mediteranean":[4,6,7,11,13,26,30,31,34,83,84]
     }
   },
 
@@ -29,105 +29,105 @@
       "s20":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":2996,"stddev":30},
+            "Morning":{"avg":3495,"stddev":30},
+            "Day":{"avg":1997,"stddev":30},
+            "Evening":{"avg":5492,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":3164,"stddev":30},
+            "Morning":{"avg":4219,"stddev":30},
+            "Day":{"avg":4746,"stddev":30},
+            "Evening":{"avg":5800,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":1102,"stddev":30},
+            "Morning":{"avg":3859,"stddev":30},
+            "Day":{"avg":1102,"stddev":30},
+            "Evening":{"avg":4410,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":1159,"stddev":30},
+            "Morning":{"avg":4056,"stddev":30},
+            "Day":{"avg":4056,"stddev":30},
+            "Evening":{"avg":4635,"stddev":30}
           }
         }
       },"s50":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":5624,"stddev":30},
+            "Morning":{"avg":6562,"stddev":30},
+            "Day":{"avg":3750,"stddev":30},
+            "Evening":{"avg":10311,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":5941,"stddev":30},
+            "Morning":{"avg":7921,"stddev":30},
+            "Day":{"avg":8911,"stddev":30},
+            "Evening":{"avg":10891,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":2070,"stddev":30},
+            "Morning":{"avg":7245,"stddev":30},
+            "Day":{"avg":2070,"stddev":30},
+            "Evening":{"avg":8280,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":2176,"stddev":30},
+            "Morning":{"avg":7615,"stddev":30},
+            "Day":{"avg":7515,"stddev":30},
+            "Evening":{"avg":8703,"stddev":30}
           }
         }
       },"s70":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":8220,"stddev":30},
+            "Morning":{"avg":9590,"stddev":30},
+            "Day":{"avg":5480,"stddev":30},
+            "Evening":{"avg":15070,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":8682,"stddev":30},
+            "Morning":{"avg":11576,"stddev":30},
+            "Day":{"avg":13023,"stddev":30},
+            "Evening":{"avg":15917,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":3025,"stddev":30},
+            "Morning":{"avg":10588,"stddev":30},
+            "Day":{"avg":3025,"stddev":30},
+            "Evening":{"avg":12100,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":3180,"stddev":30},
+            "Morning":{"avg":11129,"stddev":30},
+            "Day":{"avg":11129,"stddev":30},
+            "Evening":{"avg":12719,"stddev":30}
           }
         }
       },"s100":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":10551,"stddev":30},
+            "Morning":{"avg":12310,"stddev":30},
+            "Day":{"avg":7034,"stddev":30},
+            "Evening":{"avg":19344,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":11145,"stddev":30},
+            "Morning":{"avg":14859,"stddev":30},
+            "Day":{"avg":16717,"stddev":30},
+            "Evening":{"avg":20432,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":3883,"stddev":30},
+            "Morning":{"avg":13591,"stddev":30},
+            "Day":{"avg":3883,"stddev":30},
+            "Evening":{"avg":15533,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":4082,"stddev":30},
+            "Morning":{"avg":14287,"stddev":30},
+            "Day":{"avg":14287,"stddev":30},
+            "Evening":{"avg":16328,"stddev":30}
           }
         }
       }
@@ -135,105 +135,105 @@
       "s20":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":665,"stddev":30},
+            "Morning":{"avg":776,"stddev":30},
+            "Day":{"avg":444,"stddev":30},
+            "Evening":{"avg":1220,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":579,"stddev":30},
+            "Morning":{"avg":772,"stddev":30},
+            "Day":{"avg":868,"stddev":30},
+            "Evening":{"avg":1061,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":245,"stddev":30},
+            "Morning":{"avg":857,"stddev":30},
+            "Day":{"avg":245,"stddev":30},
+            "Evening":{"avg":980,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":204,"stddev":30},
+            "Morning":{"avg":713,"stddev":30},
+            "Day":{"avg":713,"stddev":30},
+            "Evening":{"avg":815,"stddev":30}
           }
         }
       },"s50":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":1132,"stddev":30},
+            "Morning":{"avg":1320,"stddev":30},
+            "Day":{"avg":754,"stddev":30},
+            "Evening":{"avg":2075,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":984,"stddev":30},
+            "Morning":{"avg":1312,"stddev":30},
+            "Day":{"avg":1476,"stddev":30},
+            "Evening":{"avg":1805,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":416,"stddev":30},
+            "Morning":{"avg":1458,"stddev":30},
+            "Day":{"avg":416,"stddev":30},
+            "Evening":{"avg":1666,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":347,"stddev":30},
+            "Morning":{"avg":1213,"stddev":30},
+            "Day":{"avg":1213,"stddev":30},
+            "Evening":{"avg":1386,"stddev":30}
           }
         }
       },"s70":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":1597,"stddev":30},
+            "Morning":{"avg":1864,"stddev":30},
+            "Day":{"avg":1065,"stddev":30},
+            "Evening":{"avg":2929,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":1389,"stddev":30},
+            "Morning":{"avg":1853,"stddev":30},
+            "Day":{"avg":2084,"stddev":30},
+            "Evening":{"avg":2547,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":588,"stddev":30},
+            "Morning":{"avg":2058,"stddev":30},
+            "Day":{"avg":588,"stddev":30},
+            "Evening":{"avg":2352,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":489,"stddev":30},
+            "Morning":{"avg":1712,"stddev":30},
+            "Day":{"avg":1712,"stddev":30},
+            "Evening":{"avg":1957,"stddev":30}
           }
         }
       },"s100":{
         "coldS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":1930,"stddev":30},
+            "Morning":{"avg":2252,"stddev":30},
+            "Day":{"avg":1287,"stddev":30},
+            "Evening":{"avg":3539,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":1679,"stddev":30},
+            "Morning":{"avg":2239,"stddev":30},
+            "Day":{"avg":2519,"stddev":30},
+            "Evening":{"avg":3078,"stddev":30}
           }
         },"hotS":{
           "wDay":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":710,"stddev":30},
+            "Morning":{"avg":2486,"stddev":30},
+            "Day":{"avg":710,"stddev":30},
+            "Evening":{"avg":2842,"stddev":30}
           },"wEnd":{
-            "Night":{"avg":4171,"stddev":30},
-            "Morning":{"avg":14599,"stddev":30},
-            "Day":{"avg":14599,"stddev":30},
-            "Evening":{"avg":16685,"stddev":30}
+            "Night":{"avg":591,"stddev":30},
+            "Morning":{"avg":2069,"stddev":30},
+            "Day":{"avg":2069,"stddev":30},
+            "Evening":{"avg":2365,"stddev":30}
           }
         }
       }

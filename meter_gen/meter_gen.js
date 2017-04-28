@@ -10,10 +10,10 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-04-27
+ * @Last Modified time: 2017-04-28
  *
  * Usage : 
- * 	node meter_gen [meters number] [date begin [date end 'yyyy/mm/dd'] [data interval (in minutes)] [data type ('gas, 'electric' or 'mixed')] (-separateFiles) (-temp) (-location) (-out [ouptutFilePath (folder for '-separateFiles')])
+ * 	node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-startID [id]) (-temp) (-location) (-out [filePath])
  * 
  * Example usage: 
  * 	node meter_gen.js 10 '2016/01/01' '2016/12/31' 60 electric -separateFiles 1 -location
@@ -45,6 +45,7 @@ var wantSeparateFile = -1;
 var wantTemperature = false;
 var wantLocation = false;
 var wantMaxFileSize = false;
+var meterID = 0;
 var curFileSize=0, fileNb=1; // for maxFileSize
 var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 // Defining parameters variables
@@ -53,7 +54,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 //
 // Parsing arguments
 {	const usageMessage = `Usage:
-  node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-temp) (-location) (-out [filePath])
+  node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-startID [id]) (-temp) (-location) (-out [filePath])
 
 - Meters number (integer): 1 to 1000000 (1Milion)
 - Date begin (string): date formatted as 'yyyy/mm/dd'
@@ -77,6 +78,10 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
       		(there will be as files as meters)
       '-separateFiles x' (with 'x' is an integer >=1): 
       		generate multiple files as in each file, there is 'x' data by user
+
+      '-startID id': (with 'id' is an integer >= 0)
+      		Meters ID will start from the specified ID (and finish with startID+metersNumber-1)
+      		Example: -startID 30 > First ID will be METER00030, second will be METER00031 ...
 
       '-temp':
       		add external temperature of meter for each data
@@ -142,63 +147,81 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 
 	while(args.length > 0) {
 		arg = args.shift();
-		switch(arg) {
-			case '-maxFileSize':
-				if(args.length < 1) {
-					console.log('ERROR: -maxFileSize need an argument.');
-					errNb++;
-				} else {
-					arg = args.shift();
-					wantMaxFileSize = parseInt(arg); // not working with |0 to get integer
-					if(isNaN(wantMaxFileSize)) {
-						console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
-						errNb++;
-					} if(wantMaxFileSize<=0) {
-						console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
+		if(arg.shift() === '-') {
+			switch(arg) {
+				case 'maxFileSize':
+					if(args.length < 1) {
+						console.log('ERROR: -maxFileSize need an argument.');
 						errNb++;
 					} else {
-						switch(arg[arg.length-1]) {
-							case 'G': wantMaxFileSize*=1024; /* falls through */
-							case 'M': wantMaxFileSize*=1024; /* falls through */
-							case 'k': wantMaxFileSize*=1024;
-								break;
-							default:
-								console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
-								errNb++;
+						arg = args.shift();
+						wantMaxFileSize = parseInt(arg); // not working with |0 to get integer
+						if(isNaN(wantMaxFileSize)) {
+							console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
+							errNb++;
+						} if(wantMaxFileSize<=0) {
+							console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
+							errNb++;
+						} else {
+							switch(arg[arg.length-1]) {
+								case 'G': wantMaxFileSize<<=10; /* falls through */
+								case 'M': wantMaxFileSize<<=10; /* falls through */
+								case 'k': wantMaxFileSize<<=10;
+									break;
+								default:
+									console.log("ERROR: -maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (arg was \"", arg+'")');
+									errNb++;
+							}
 						}
 					}
-				}
-				break;
-			case '-separateFiles':
-				if(args.length < 1 || String(args[0])[0]==='-') {
-					wantSeparateFile = 1;
-				} else {
-					wantSeparateFile = args.shift();
-					if(isNaN(wantSeparateFile) || wantSeparateFile<0) {
-	    				console.log("ERROR: -separateFiles need a positive integer as argument (arg was \"", wantSeparateFile+'"")');
-	    				errNb++;
+					break;
+				case 'separateFiles':
+					if(args.length < 1 || String(args[0])[0]==='-') {
+						wantSeparateFile = 1;
 					} else {
-						wantSeparateFile = wantSeparateFile|0;
+						wantSeparateFile = args.shift();
+						if(isNaN(wantSeparateFile) || wantSeparateFile<0) {
+		    				console.log("ERROR: -separateFiles need a positive integer as argument (arg was \"", wantSeparateFile+'"")');
+		    				errNb++;
+						} else {
+							wantSeparateFile = wantSeparateFile|0;
+						}
 					}
-				}
-				break;
-			case '-temp':
-				wantTemperature = true;
-				break;
-			case '-location':
-				wantLocation = true;
-				break;
-			case '-out':
-				if(args.length < 1) {
-					console.log('ERROR: -out need an argument.');
+					break;
+				case 'startID':
+					if(args.length < 1) {
+						console.log('ERROR: -startID need an argument.');
+						errNb++;
+					} else {
+						meterID = args.shift()|0;
+						if(meterID < 0) {
+							console.log('ERROR: -startID should be positive integer.');
+							errNb++;
+						}
+					}
+					break;
+				case 'temp':
+					console.log('WARNING: -temp will return random temperatures (not working well)');
+					wantTemperature = true;
+					break;
+				case 'location':
+					wantLocation = true;
+					break;
+				case 'out':
+					if(args.length < 1) {
+						console.log('ERROR: -out need an argument.');
+						errNb++;
+					} else {
+						filePath = args.shift();
+					}
+					break;
+				default:
+					console.log('ERROR: Unknown option:', arg);
 					errNb++;
-				} else {
-					filePath = args.shift();
-				}
-				break;
-			default:
-				console.log('ERROR: Unknown argument:', arg);
-				errNb++;
+			}
+		} else {
+			console.log('ERROR: Unknown argument:', arg);
+			errNb++;
 		}
 	}
 
@@ -297,7 +320,7 @@ let metersTab = [];
 	        0, // highcost
 	        0, // lowcost
 	        consumptionType,
-	        'METER' + ('00000' + i).slice(-6),
+	        'METER' + ('00000' + (meterID++)).slice(-6),
 	       	houseSurface
 	    ];
 	    if(wantTemperature)
