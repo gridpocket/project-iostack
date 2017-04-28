@@ -81,7 +81,7 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 
       '-lastID id': (with 'id' is an integer and 0<id<meters number, default: equiv. to meters number)
       		Meters ID will start from the specified ID (and finish with startID+metersNumber-1)
-      		Example: -lastID 30 > Last generated meter ID will be METER00030
+      		Example: -lastID 30 > Last generated meter ID will be METER00029
 
       '-temp':
       		add external temperature of meter for each data (°C)
