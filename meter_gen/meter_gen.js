@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-04-28
+ * @Last Modified time: 2017-05-02
  *
  * Usage : 
  * 	node meter_gen [meters number] [date begin] [date end] [data interval] [data type] (-maxFileSize [size]) (-separateFiles (interval)) (-startID [id]) (-lastID [id]) (-temp) (-location) (-out [filePath])
@@ -30,6 +30,10 @@ var Rand = require('randgen');
 // Libraries and external files
 // 
 
+// Computing time
+console.time('total');
+console.time('init');
+
 // Speed-up meter_gen, using more memory to save time
 var openFiles = new Map(); // {fileName1:fileDescriptor, fileName2:fileDescriptor...}
 
@@ -43,6 +47,7 @@ var wantSeparateFile = -1;
 var wantTemperature = false;
 var wantLocation = false;
 var wantMaxFileSize = false, curFileSize=0, fileNb=1;
+var totalWroteSize = 0;
 var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 // Defining parameters variables
 //  
@@ -76,11 +81,11 @@ var filePath = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
       		generate multiple files as in each file, there is 'x' data by user
 
       '-startID id': (with 'id' is an integer >= 0, default: 0)
-      		Meters ID will start from the specified ID (and finish with startID+metersNumber-1)
+      		Meters ID will start from the specified ID
       		Example: -startID 30 > First ID will be METER00030, second will be METER00031 ...
 
       '-lastID id': (with 'id' is an integer and 0<id<meters number, default: equiv. to meters number)
-      		Meters ID will start from the specified ID (and finish with startID+metersNumber-1)
+      		Meters ID will finish at lastID-1
       		Example: -lastID 30 > Last generated meter ID will be METER00029
 
       '-temp':
@@ -282,16 +287,24 @@ if(wantSeparateFile !== -1 || wantMaxFileSize) {
 // Check filePath
 // 
 
-
+console.timeEnd('init');
+console.time('config');
 const CONFIG = getConfig(); // Build DataConsumption structure
+console.timeEnd('config');
 
 // Generating Meters information
+console.time('meters');
 const metersTab = generateMeters(CONFIG.climatZone);
+console.timeEnd('meters');
+if(global.gc) gc();
 
 // Generate Data
+console.time('data');
 generateDataLoop(filePath, metersTab, FROM, TO, MINUTES_INTERVAL);
+console.timeEnd('data');
 
 // close files
+console.timeEnd('total');
 openFiles.forEach(closeFile);
 
 process.exit(0);
@@ -340,6 +353,7 @@ function appendToFile(fileName, tab) {
 			return false;
 	}
 	fs.appendFileSync(fd, line, 'utf-8');
+	totalWroteSize += Buffer.byteLength(line, 'utf8');
 	return true;
 }
 
@@ -377,16 +391,18 @@ function getConfig() {
 function getLocations(totalPop) {
 	let locationsFile = require('./locations.json');
 	let sum_pop = 0;
+
+	const approximateRatio = 70000000 / totalPop; // Approximate 'how many french inhabitants needed to make one meter' (to speed up, approximating ceiled at 70M people in france)
 	const locations = [];
 
 	// compute sum_pop
 	let curr_loc;
 	while(locationsFile.length > 0) {
 		curr_loc = locationsFile.shift();
-		if(curr_loc.population<1)
-			continue;
+		if(curr_loc.population<approximateRatio)
+			continue; // not enough population in this city, not taken into acount
 
-		sum_pop += curr_loc.population; // ...+343304
+		sum_pop += curr_loc.population; // ...+343304, counting exact French population according to config file
 		locations.push({
 			country: curr_loc.country, // "FRA"
 			region: curr_loc.region, // 6
@@ -398,14 +414,16 @@ function getLocations(totalPop) {
 		});
 	}
 
+	// Divide city populations to obtain wanted meters number
 	let sum_pop2 = totalPop;
 	for(let i=locations.length-1; i>=0; i--) {
-		locations[i].pop = (locations[i].pop * totalPop / sum_pop)|0;
+		locations[i].pop = (locations[i].pop * totalPop / sum_pop)|0; // rounding down
 		sum_pop2 -= locations[i].pop;
 	}
 
+	// Add missing population to have exactly the wanted meters number
 	while(sum_pop2 > 0) {
-		locations[(Math.random()*locations.length)|0].pop ++;
+		locations[(Math.random()*locations.length)|0].pop ++; // add one on random city witch already have some meters
 		sum_pop2--;
 	}
 
@@ -507,16 +525,27 @@ function generateMeters(climatZone) {
 }
 
 function generateDataLoop(filePath, metersTab, dateFrom, dateTo, minutesInterval) {
-
+	// Declaring variables here for reusage (memory gestion)
 	let lastDateHour = 25; // force nextDay for first date
 	let season;
 	let dayOfWeek;
 	let fileName = filePath;
+	let dateHour;
+	let i;
+	let dayTime;
+	let meter;
+	let avg;	
+	let stdev;
+	let curr_conso;
+
+	let progress = 0;
+	const progressMax = 1+ (dateTo.valueOf() - dateFrom.valueOf())/1000 /60 /minutesInterval; // compute number of loops needed
+	printProgress(progress, progressMax);
 
 	for(let d=moment(dateFrom); d<=dateTo; d.add(minutesInterval, 'minutes')) { // For each period of time
-		const dateHour = d.format('HH')|0;
+		dateHour = d.format('HH')|0;
 		if(lastDateHour > dateHour) { // next day 
-			for(let i=metersTab.length-1; i>=0; i--) {
+			for(i=metersTab.length-1; i>=0; i--) {
 				metersTab[i].highcost = 0;
 		        metersTab[i].lowcost = 0;
 			}
@@ -530,7 +559,7 @@ function generateDataLoop(filePath, metersTab, dateFrom, dateTo, minutesInterval
 	        dayOfWeek = (dateDay!=='Sunday' && dateDay!=='Saturday') ? 'wDay' : 'wEnd';
 		}
 
-	    let dayTime = 'Evening';
+	    dayTime = 'Evening';
 	    if(dateHour <= 6) {
 	        dayTime = 'Night'; // Night (00h -> 06H)
 	    } else if(dateHour <=  9) {
@@ -551,8 +580,8 @@ function generateDataLoop(filePath, metersTab, dateFrom, dateTo, minutesInterval
 	    	fileName = filePath + fileMoment + '.csv';
 	    }
 
-		for(let i=metersTab.length-1; i>=0; i--) { // For each meter
-			const meter = metersTab[i];
+		for(i=metersTab.length-1; i>=0; i--) { // For each meter
+			meter = metersTab[i];
 			if(wantSeparateFile===0) {
 				fileName = filePath + meter.line[5] + '.csv';
 			}
@@ -560,11 +589,11 @@ function generateDataLoop(filePath, metersTab, dateFrom, dateTo, minutesInterval
  			// DataConsumption[energyType][surface]
 			//  energyType = meter.consumptionType==='electric'?'elec':'gas';
 			//  surface = 's'+meter.houseType;
-			const subConfig = CONFIG.DataConsumption[meter.line[4]]['s'+meter.line[6]];
+			subConfig = CONFIG.DataConsumption[meter.line[4]]['s'+meter.line[6]];
 
-		    const avg = subConfig[season][dayOfWeek][dayTime].avg * CONFIG.climats[meter.climat][season].RatioAvg;
-		    const stdev = subConfig[season][dayOfWeek][dayTime].stddev * CONFIG.climats[meter.climat][season].RatioStddev;
-		    const curr_conso = Rand.rnorm(avg, stdev) / (1440 / minutesInterval);
+		    avg = subConfig[season][dayOfWeek][dayTime].avg * CONFIG.climats[meter.climat][season].RatioAvg;
+		    stdev = subConfig[season][dayOfWeek][dayTime].stddev * CONFIG.climats[meter.climat][season].RatioStddev;
+		    curr_conso = Rand.rnorm(avg, stdev) / (1440 / minutesInterval);
 
 		    //
 		    // Update Line
@@ -580,7 +609,9 @@ function generateDataLoop(filePath, metersTab, dateFrom, dateTo, minutesInterval
 		    //
 		    // Write line to file
 		    if(wantMaxFileSize) {
-				if(!appendToFile(filePath + fileNb + '.csv', meter.line)) {
+		    	const name = filePath + fileNb + '.csv';
+				if(!appendToFile(name, meter.line)) {
+					closeFile(getFile(name), name);
 					fileNb++;
 					if(!appendToFile(filePath + fileNb + '.csv', meter.line)) {
 						console.log("ERROR: Line of data larger than given Max file size");
@@ -593,7 +624,23 @@ function generateDataLoop(filePath, metersTab, dateFrom, dateTo, minutesInterval
 		    // Write to file
 		    // 
 		}
+
+		if(global.gc) gc();
+		printProgress(++progress, progressMax);
 	}
+	console.log(); // jump over one line
 }
 // Main Functions
-// 
+//
+
+function printProgress(progress, max) {
+	const memu = process.memoryUsage().heapUsed;
+	process.stdout.write('progress: '+progress+' /'+max+' ('+((100*progress/max)|0)+'%), memory: '+ prettifyNumber(memu) +', generated: '+ prettifyNumber(totalWroteSize) +'        \r');
+}
+
+function prettifyNumber(number) {
+	return 	((number/(1024*1024*1024)|0) > 0? (number/(1024*1024*1024)).toFixed(2)+'G': // with 2 decimals for Giga bytes
+			(number>>20) > 0? (number>>20)+'M':
+			(number>>10) > 0? (number>>10)+'k':
+			number)+'B';
+}
