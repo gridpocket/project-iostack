@@ -40,24 +40,24 @@ var totalFileSize = 0;
 
 // Get meter_gen call parameters
 const params = getParameters(process.argv.slice(2));
-console.timeEnd('init');
+if(params.debug) console.timeEnd('init');
 
 // Generating Meters information
-console.time('meters');
+if(params.debug) console.time('meters');
 const configClimat = getClimatConfig(params.climatFile);
 const metersTab = generateMeters(params, configClimat.climatZone);
-console.timeEnd('meters');
+if(params.debug) console.timeEnd('meters');
 if(global.gc) gc();
 
 // Generate Data
-console.time('data');
-const configConsum = require(params.consumptionsFile);
+if(params.debug) console.time('data');
+const configConsum = JSON.parse(fs.readFileSync(params.consumptionsFile));
 generateDataLoop(params, configClimat, configConsum, metersTab);
-console.timeEnd('data');
+if(params.debug) console.timeEnd('data');
 
 // close files
 openFiles.forEach(closeFile);
-console.timeEnd('total');
+if(params.debug) console.timeEnd('total');
 
 process.exit(0);
 //  //  //  //  // Execution End //  //  //  //  //
@@ -88,7 +88,7 @@ function getFile(params, fileName, createIfNotExists=true) {
 		firstLine.push('city,region,lat,long');
 
 	if(!appendToFile(params, fileName, firstLine)) { // should be after 'openFiles.set' to not have infinite recursive loop
-		console.log("ERROR: Head line larger than given Max file size");
+		console.error('ERROR: Head line larger than given Max file size');
 		process.exit(-3);
 	}
 	return fileDescriptor;
@@ -135,7 +135,8 @@ function loadArgs(map, recursive=[]) {
 		consumptionsFile: null,
 		climatFile: null,
 		locationsFile: null,
-		out: null
+		out: null,
+		debug: false
 	};
 
 	let hasErrors = false;
@@ -145,10 +146,10 @@ function loadArgs(map, recursive=[]) {
 		const configFile = map.get('config');
 
 		if(recursive.indexOf(configFile) >= 0) {
-			console.log('ERROR: -config loop detected:',configFile,'is directly or indirectly referencing itself');
+			console.error('ERROR: -config loop detected:',configFile,'is directly or indirectly referencing itself');
 			hasErrors = true;
 		} else {
-			const config = require(configFile);// get config file as json object
+			const config = JSON.parse(fs.readFileSync(configFile));// get config file as json object
 
 			// convert config to Map object (speed up)
 			const paramsMap = new Map();
@@ -171,7 +172,7 @@ function loadArgs(map, recursive=[]) {
     	if(params.hasOwnProperty(key))
         	params[key] = value;
         else if(key !== 'config') {
-        	console.log('ERROR: Unrecognised option "'+key+'"');
+        	console.error('ERROR: Unrecognised option "'+key+'"');
         	hasErrors = true;
         }
     });
@@ -247,6 +248,10 @@ function getParameters(args) {
 		}
 	}
 
+	if(!map.has('config') && fs.existsSync('./config.json')) { // default config file
+		map.set('config', './config.json');
+	}
+
 	// loading arguments
 	let errNb = 0;
 	let params;
@@ -260,17 +265,17 @@ function getParameters(args) {
 	// checking arguments validity
 	// MetersNumber
 	if(params.metersNumber === null) {
-		console.log('ERROR: metersNumber need to be specified');
+		console.error('ERROR: metersNumber need to be specified');
 		errNb++;
 		params.metersNumber = null;
 	} else if(params.metersNumber === '') {
-		console.log('ERROR: metersNumber need an argument');
+		console.error('ERROR: metersNumber need an argument');
 		errNb++;
 		params.metersNumber = null;
 	} else {
 		const nb_meters = params.metersNumber|0;
 		if(nb_meters <= 0 || nb_meters > 999999) {
-	    	console.log('ERROR: Number of meters should be between 1 and 999999 (was "'+params.metersNumber+'")');
+	    	console.error('ERROR: Number of meters should be between 1 and 999999 (was "'+params.metersNumber+'")');
 	    	errNb++;
 			params.metersNumber = null;
 	    } else {
@@ -280,20 +285,20 @@ function getParameters(args) {
 
 	// Date
 	if(params.beginDate === null || params.endDate === null) {
-		console.log('ERROR: beginDate and endDate need to be specified');
+		console.error('ERROR: beginDate and endDate need to be specified');
 		errNb++;
 	} else if(params.beginDate === '' || params.endDate === '') {
-		console.log('ERROR: beginDate and endDate need an argument each');  
+		console.error('ERROR: beginDate and endDate need an argument each');  
 		errNb++;
 	} else if(!moment(params.beginDate, 'YYYY/MM/DD', true).isValid() || !moment(params.endDate, 'YYYY/MM/DD', true).isValid()) {
-	    console.log('ERROR: Check your beginDate and endDate, should be in format yyyy/mm/dd (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
+	    console.error('ERROR: Check your beginDate and endDate, should be in format yyyy/mm/dd (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
 	    errNb++;
 	} else {
 		const beginDate = moment(params.beginDate, 'YYYY/MM/DD');
 		const endDate = moment(params.endDate, 'YYYY/MM/DD');
 
 		if(endDate < beginDate) {
-			console.log('ERROR: endDate should be same or after beginDate (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
+			console.error('ERROR: endDate should be same or after beginDate (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
 			errNb++;
 		} else {
 			params.beginDate = beginDate;
@@ -303,12 +308,12 @@ function getParameters(args) {
 
 	// Interval
 	if(params.interval === null) {
-		console.log('ERROR: interval need to be specified');
+		console.error('ERROR: interval need to be specified');
 		errNb++;
 	} else {
 		const interval = params.interval|0;
 		if(interval <= 0 || interval > 999999) {
-	    	console.log('ERROR: interval should be 1 at minimum (was "'+params.interval+'")');
+	    	console.error('ERROR: interval should be 1 at minimum (was "'+params.interval+'")');
 	    	errNb++;
 	    } else {
 	    	params.interval = interval;
@@ -317,10 +322,10 @@ function getParameters(args) {
 
 	// Meter types
 	if(params.meterTypes === null) {
-		console.log('ERROR: meterTypes need to be specified');
+		console.error('ERROR: meterTypes need to be specified');
 		errNb++;
 	} else if (params.meterTypes !== 'electric' && params.meterTypes !== 'gas' && params.meterTypes !== 'mixed') {
-	    console.log("ERROR: meterTypes should be 'electric', 'gas' or 'mixed' (was \""+params.meterTypes+'")');
+	    console.error("ERROR: meterTypes should be 'electric', 'gas' or 'mixed' (was \""+params.meterTypes+'")');
 	    errNb++;
 	}
 
@@ -328,13 +333,13 @@ function getParameters(args) {
 	if(params.maxFileSize === null || params.maxFileSize === false || params.maxFileSize === 'false') {
 		params.maxFileSize = null;
 	} else if(params.maxFileSize === '') {
-		console.log('ERROR: maxFileSize need an argument (put false to disable a config setting)');
+		console.error('ERROR: maxFileSize need an argument (put false to disable a config setting)');
 		errNb++;
 	} else {
 		let maxFileSize = parseInt(params.maxFileSize); // not working with |0 to get integer
 
 		if(isNaN(maxFileSize) || maxFileSize <= 0) {
-			console.log("ERROR: maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (was \""+params.maxFileSize+'")');
+			console.error("ERROR: maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (was \""+params.maxFileSize+'")');
 			errNb++;
 		} else {
 			switch(params.maxFileSize[params.maxFileSize.length-1]) {
@@ -343,7 +348,7 @@ function getParameters(args) {
 				case 'k': maxFileSize*=1024;
 					break;
 				default:
-					console.log("ERROR: maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (was \""+params.maxFileSize+'")');
+					console.error("ERROR: maxFileSize need an argument as integer > 0 followed by 'k', 'M' or 'G' (was \""+params.maxFileSize+'")');
 					errNb++;
 			}
 			params.maxFileSize = maxFileSize;
@@ -354,12 +359,12 @@ function getParameters(args) {
 	if(params.separateDataBy === null || params.separateDataBy === false || params.separateDataBy === 'false') {
 		params.separateDataBy = null;
 	} else if(params.separateDataBy === '') {
-		console.log('ERROR: separateDataBy need an argument (put false to disable a config setting)');
+		console.error('ERROR: separateDataBy need an argument (put false to disable a config setting)');
 		errNb++;
 	} else {
 		let separateDataBy = params.separateDataBy |0;
 		if(separateDataBy<0) {
-			console.log('ERROR: separateDataBy need a positive integer as argument (was "'+params.separateDataBy+'")');
+			console.error('ERROR: separateDataBy need a positive integer as argument (was "'+params.separateDataBy+'")');
 			errNb++;
 		} else {
 			params.separateDataBy = separateDataBy;
@@ -368,7 +373,7 @@ function getParameters(args) {
 
 	// Max File Size, Separate Files
 	if(params.maxFileSize !== null && params.separateDataBy !== null) {
-		console.log('ERROR: Cannot use -separateDataBy and -maxFileSize together ('+params.maxFileSize, ', ', params.separateDataBy+')');
+		console.error('ERROR: Cannot use -separateDataBy and -maxFileSize together ('+params.maxFileSize, ', ', params.separateDataBy+')');
 		errNb++;
 	}
 
@@ -378,7 +383,7 @@ function getParameters(args) {
 	} else {
 		let startID = params.startID|0;
 		if(startID < 0 || (params.metersNumber && startID >= params.metersNumber)) {
-			console.log('ERROR: startID should be an integer between 0 and (meters number -1) (was "'+params.startID+'"")');
+			console.error('ERROR: startID should be an integer between 0 and (meters number -1) (was "'+params.startID+'"")');
 			errNb++;
 			params.startID = 0;
 		} else {
@@ -392,7 +397,7 @@ function getParameters(args) {
 	} else {
 		let lastID = params.lastID|0;
 		if(lastID <= 0 || (params.metersNumber && lastID > params.metersNumber)) {
-			console.log('ERROR: lastID should be an integer between 1 and (meters number) (was "'+params.lastID+'"")');
+			console.error('ERROR: lastID should be an integer between 1 and (meters number) (was "'+params.lastID+'"")');
 			errNb++;
 			params.lastID = params.metersNumber;
 		} else {
@@ -402,7 +407,7 @@ function getParameters(args) {
 
 	// StartID LastID
 	if(params.lastID <= params.startID) {
-		console.log('ERROR: startID should be less than lastID (was startID:"'+params.startID+'", lastID:"'+params.lastID+'")');
+		console.error('ERROR: startID should be less than lastID (was startID:"'+params.startID+'", lastID:"'+params.lastID+'")');
 		errNb++;
 	}
 
@@ -411,9 +416,9 @@ function getParameters(args) {
 		params.temp = false;
 	} else if(params.temp === '' || params.temp === true || params.temp === 'true') {
 		params.temp = true;
-		console.log('WARNING: -temp is not working, and will always put \'20.00\' as temperature');
+		console.error('WARNING: -temp is not working, and will always put \'20.00\' as temperature');
 	} else {
-		console.log('ERROR: temp need a boolean (was "'+params.temp+'")');
+		console.error('ERROR: temp need a boolean (was "'+params.temp+'")');
 		params.temp = null;
 		errNb++;
 	}
@@ -424,7 +429,7 @@ function getParameters(args) {
 	} else if(params.location === '' || params.location === true || params.location === 'true') {
 		params.location = true;
 	} else {
-		console.log('ERROR: location need a boolean (was "'+params.temp+'")');
+		console.error('ERROR: location need a boolean (was "'+params.temp+'")');
 		params.location = null;
 		errNb++;
 	}
@@ -433,7 +438,7 @@ function getParameters(args) {
 	if(params.out === null) {
 		params.out = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
 	} else if (params.out === '') {
-		console.log('ERROR: out need an argument ('+((params.maxFileSize !== null || params.separateDataBy !== null)?'folder path':'csv file path'));
+		console.error('ERROR: out need an argument ('+((params.maxFileSize !== null || params.separateDataBy !== null)?'folder path':'csv file path'));
 		errNb++;
 	} // else keep like it is
 
@@ -445,7 +450,7 @@ function getParameters(args) {
 
 		// Build all folders path recursively
 		if(!buildFolder(params.out)) {
-			console.log('Impossible to go to or create the folder:', e);
+			console.error('ERROR: Impossible to go to or create the folder:', e);
 			errNb++;
 		}
 	} else {
@@ -457,13 +462,37 @@ function getParameters(args) {
 		
 		// Build all folders path recursively
 		if(!buildFolder(folder)) {
-			console.log('Impossible to go to or create the folder:', e);
+			console.error('ERROR: Impossible to go to or create the folder:', e);
 			errNb++;
 		}
 	}
 
+	if(params.climatFile === null) {
+		console.error('ERROR: climatFile need to be specified');
+		errNb++;
+	} else if(params.climatFile === '') {
+		console.error('ERROR: climatFile need an argument');
+		errNb++;
+	}
+
+	if(params.consumptionsFile === null) {
+		console.error('ERROR: consumptionsFile need to be specified');
+		errNb++;
+	} else if(params.consumptionsFile === '') {
+		console.error('ERROR: consumptionsFile need an argument');
+		errNb++;
+	}
+
+	if(params.locationsFile === null) {
+		console.error('ERROR: locationsFile need to be specified');
+		errNb++;
+	} else if(params.locationsFile === '') {
+		console.error('ERROR: locationsFile need an argument');
+		errNb++;
+	}
+
 	if(errNb > 0) {
-		console.log('\nType meter_gen -h to see how to use');
+		console.error('\nType meter_gen -h to see how to use');
 		process.exit(-2); // Argument or Initialisation error
 	}
 
@@ -471,7 +500,7 @@ function getParameters(args) {
 }
 
 function getClimatConfig(climatFileName) {
-	const climatFile = require(climatFileName);
+	const climatFile = JSON.parse(fs.readFileSync(climatFileName));
 
 	// transform [{climat: [regions, ...]}, ...] into map [{region: climat}, ...] (bigger but faster to read)
 	Object.keys(climatFile.climatZone).forEach(countryID => {
@@ -489,7 +518,7 @@ function getClimatConfig(climatFileName) {
 }
 
 function getLocations(locationsFileName, totalPop) {
-	let locationsFile = require(locationsFileName);
+	let locationsFile = JSON.parse(fs.readFileSync(locationsFileName)); 
 	let sum_pop = 0;
 
 	const locations = [];
@@ -587,7 +616,7 @@ function generateMeters(params, climatZone) {
 	    // region climat
 	    meter.climat = climatZone.FRA[String(city.region)];
 	    if(!meter.climat) {
-		    console.log("ERROR: Region", city.region, "not references in climat file");
+		    console.error('ERROR: Region', city.region, 'not references in climat file');
 	    	process.exit(-1);
 	    }
 
@@ -650,7 +679,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab) {
 
 	let progress = 0;
 	const progressMax = 1+ (params.endDate.valueOf() - params.beginDate.valueOf())/1000 /60 /params.interval; // compute number of loops needed
-	printProgress(progress, progressMax);
+	if(params.debug) printProgress(progress, progressMax);
 
 	for(let d=moment(params.beginDate); d<=params.endDate; d.add(params.interval, 'minutes')) { // For each period of time
 		dateHour = d.format('HH')|0;
@@ -724,7 +753,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab) {
 					closeFile(getFile(params, name), name);
 					fileNb++;
 					if(!appendToFile(params, params.out + fileNb + '.csv', meter.line)) {
-						console.log("ERROR: Line of data larger than given Max file size");
+						console.error('ERROR: Line of data larger than given Max file size');
 						process.exit(-3);
 					}
 				}
@@ -736,9 +765,10 @@ function generateDataLoop(params, configClimat, configConsum, metersTab) {
 		}
 
 		if(global.gc) gc();
-		printProgress(++progress, progressMax);
+		if(params.debug) printProgress(++progress, progressMax);
 	}
-	console.log(); // jump over one line
+
+	if(params.debug) console.log(); // jump over one line
 }
 // Main Functions
 //
