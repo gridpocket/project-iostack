@@ -1,7 +1,5 @@
-mkdir stat-gen 2>/dev/null
-
 echo "Generating One Elec..."
-node ../meter_gen.js -config './statGenConf.json' -metersNumber 10000 -beginDate '2017/01/01' -endDate '2017/01/01' -out './statgen/lightOneElec.csv'
+node ../meter_gen.js -config './statGenConf.json' -metersNumber 660000 -beginDate '2017/01/01' -endDate '2017/01/01' -out './statgen/lightOneElec.csv'
 
 echo "Generating Cold Elec..."
 node ../meter_gen.js -config './statGenConf.json' -metersNumber 3000 -beginDate '2016/11/01' -endDate '2017/03/01' -out './statgen/generatedColdElec.csv'

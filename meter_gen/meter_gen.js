@@ -540,7 +540,7 @@ function getLocations(locationsFileName, totalPop) {
 
 			// pop:343304 dens:4773 => radius of 4.78485496485km
 			// density <1 => 1  to avoid errors (dividing 0 or negative values)
-			radius: Math.sqrt(curr_loc.population / (Math.PI* (curr_loc.density<1?1:curr_loc.density))), 
+			radius: Math.sqrt(curr_loc.population / (Math.PI* ((curr_loc.density<1?1:curr_loc.density))+121.519 )), //121.519 is average france density, used as constant ratio to reduce size of smallest cities 
 			pop: curr_loc.population
 		});
 	}
