@@ -2,9 +2,10 @@
 	"interval": 60,
 	"meterTypes": "electric",
 	"location":true,
-	"temp":true,
+	"temp":false,
 	"consumptionsFile": "../configs/consumptions.json",
 	"climatFile": "../configs/climats.json",
 	"locationsFile": "../configs/locations.json",
+	"meteoFile": "../configs/meteoData.json",
 	"debug":true
 }

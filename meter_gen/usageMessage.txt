@@ -77,6 +77,11 @@ Options:
 		(currently not working, all temperatures will be 20.00)
 
 		If no option temp, equivalent to '-temp false'
+		If temp option is enabled, -meteoFile should be set
+
+	'-meteoFile [file]':
+		Specity the path to the file containing meteo information
+
 
 	'-location [boolean]':
 		with boolean is like 'true'/'false' (string ignoring case, or boolean type in json config file)

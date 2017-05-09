@@ -1,0 +1,42 @@
+Dans le cadre de la politique du Gouvernement en faveur de l’ouverture des données publiques (« Open Data »), Etalab a conçu la « Licence Ouverte / Open Licence ». Cette licence, élaborée en concertation avec l’ensemble des acteurs concernés, facilite et encourage la réutilisation des données publiques mises à disposition gratuitement.
+
+La publication du décret n° 2017-638 prévu par l’article L 323-2 du CRPA fait de la LO 2.0 la licence de référence pour les administrations pour la publication de données publiques, aux côtés de l’ODbL, et permet ainsi son utilisation par l’ensemble des administrations.
+
+La « Licence Ouverte / Open Licence » présente les caractéristiques suivantes :
+
+    Une grande liberté de réutilisation des informations :
+        Une licence ouverte, libre et gratuite, qui apporte la sécurité juridique nécessaire aux producteurs et aux réutilisateurs des données publiques ;
+        Une licence qui promeut la réutilisation la plus large en autorisant la reproduction, la redistribution, l’adaptation et l’exploitation commerciale des données ;
+        Une licence qui s’inscrit dans un contexte international en étant compatible avec les standards des licences Open Data développées à l’étranger et notamment celles du gouvernement britannique (Open Government Licence) ainsi que les autres standards internationaux (ODC-BY, CC-BY 2.0).
+    Une exigence forte de transparence de la donnée et de qualité des sources en rendant obligatoire la mention de la paternité.
+    Une opportunité de mutualisation pour les autres données publiques en mettant en place un standard réutilisable par les collectivités territoriales qui souhaiteraient se lancer dans l’ouverture des données publiques.
+
+Le logo de la « Licence Ouverte / Open Licence » est également librement réutilisable.
+
+
+######################################
+
+Fourniture, au format texte, des moyennes des différents indices mensuels de températures et de nombre de jours de températures, sur les 8602 points terrestres de la France métropolitaine sur la période de référence (1976-2005). Moyennes calculées à partir de données corrigées du CNRM (Centre National de Recherches Météorologiques).
+
+URL
+    https://www.data.gouv.fr/en/datasets/indices-saisonniers-de-temperature-et-nombre-de-jours-de-temperature-issus-du-modele-aladin-climat/
+
+    https://www.data.gouv.fr/s/resources/indices-mensuels-de-temperature-et-nombre-de-jours-de-temperature-issus-du-modele-aladin-pour-la-periode-de-reference/20150930-200335/Tempe_REF_mensuel.txt
+Latest URL
+    https://www.data.gouv.fr/en/datasets/r/10def999-5480-446f-a279-080df7b20a6a
+Format
+    txt
+MimeType
+    text/plain
+Size
+    10.6 MB
+sha1
+    2d424e000f78bec4c0846c5f7941f7da80b715d9
+Created on
+    October 29, 2015 7:09 PM
+Modified on
+    October 29, 2015 7:09 PM
+Published on
+    September 30, 2015 8:03 PM
+Downloads
+    16

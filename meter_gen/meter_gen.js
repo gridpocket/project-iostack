@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-05-05
+ * @Last Modified time: 2017-05-09
  *
  * Usage : 
  *	  node meter_gen -config [configuration file] (-metersNumber) (-beginDate) (-endDate) (-interval) (-meterTypes) (options...)
@@ -40,19 +40,20 @@ var totalFileSize = 0;
 
 // Get meter_gen call parameters
 const params = getParameters(process.argv.slice(2));
+const configMeteo = (!params.meteoFile)?null:getMeteoConfig(params.meteoFile);
+const configClimat = getClimatConfig(params.climatFile);
 if(params.debug) console.timeEnd('init');
 
 // Generating Meters information
 if(params.debug) console.time('meters');
-const configClimat = getClimatConfig(params.climatFile);
-const metersTab = generateMeters(params, configClimat.climatZone);
+const metersTab = generateMeters(params, configClimat.climatZone, configMeteo);
 if(params.debug) console.timeEnd('meters');
 if(global.gc) gc();
 
 // Generate Data
 if(params.debug) console.time('data');
 const configConsum = JSON.parse(fs.readFileSync(params.consumptionsFile));
-generateDataLoop(params, configClimat, configConsum, metersTab);
+generateDataLoop(params, configClimat, configConsum, metersTab, configMeteo);
 if(params.debug) console.timeEnd('data');
 
 // close files
@@ -134,6 +135,7 @@ function loadArgs(map, recursive=[]) {
 		location: null,
 		consumptionsFile: null,
 		climatFile: null,
+		meteoFile: null,
 		locationsFile: null,
 		out: null,
 		debug: false
@@ -416,7 +418,6 @@ function getParameters(args) {
 		params.temp = false;
 	} else if(params.temp === '' || params.temp === true || params.temp === 'true') {
 		params.temp = true;
-		console.error('WARNING: -temp is not working, and will always put \'20.00\' as temperature');
 	} else {
 		console.error('ERROR: temp need a boolean (was "'+params.temp+'")');
 		params.temp = null;
@@ -467,27 +468,23 @@ function getParameters(args) {
 		}
 	}
 
-	if(params.climatFile === null) {
+	if(!params.climatFile) {
 		console.error('ERROR: climatFile need to be specified');
 		errNb++;
-	} else if(params.climatFile === '') {
-		console.error('ERROR: climatFile need an argument');
-		errNb++;
 	}
 
-	if(params.consumptionsFile === null) {
+	if(!params.consumptionsFile) {
 		console.error('ERROR: consumptionsFile need to be specified');
 		errNb++;
-	} else if(params.consumptionsFile === '') {
-		console.error('ERROR: consumptionsFile need an argument');
+	}
+
+	if(!params.locationsFile) {
+		console.error('ERROR: locationsFile need to be specified');
 		errNb++;
 	}
 
-	if(params.locationsFile === null) {
-		console.error('ERROR: locationsFile need to be specified');
-		errNb++;
-	} else if(params.locationsFile === '') {
-		console.error('ERROR: locationsFile need an argument');
+	if(!params.meteoFile && params.temp) {
+		console.error('ERROR: when option -temp, meteoFile need to be specified');
 		errNb++;
 	}
 
@@ -517,6 +514,19 @@ function getClimatConfig(climatFileName) {
 	return climatFile;
 }
 
+function getMeteoConfig(meteoFileName) {
+	const meteoFile = JSON.parse(fs.readFileSync(params.meteoFile));
+
+	const meteoConfig = new Map();
+	let currMeteoData;
+	for(let i=meteoFile.length-1; i>=0; i--) {
+		currMeteoData = meteoFile[i];
+		meteoConfig.set(currMeteoData.id, currMeteoData);
+	}
+
+	return meteoConfig;
+}
+
 function getLocations(locationsFileName, totalPop) {
 	let locationsFile = JSON.parse(fs.readFileSync(locationsFileName)); 
 	let sum_pop = 0;
@@ -540,7 +550,7 @@ function getLocations(locationsFileName, totalPop) {
 
 			// pop:343304 dens:4773 => radius of 4.78485496485km
 			// density <1 => 1  to avoid errors (dividing 0 or negative values)
-			radius: Math.sqrt(curr_loc.population / (Math.PI* ((curr_loc.density<1?1:curr_loc.density))+121.519 )), //121.519 is average france density, used as constant ratio to reduce size of smallest cities 
+			radius: Math.sqrt(curr_loc.population / (Math.PI* ((curr_loc.density<1?1:curr_loc.density)+121.519) )), //121.519 is average france density, used as constant ratio to reduce size of smallest cities 
 			pop: curr_loc.population
 		});
 	}
@@ -580,7 +590,34 @@ function getLocations(locationsFileName, totalPop) {
 
 //
 // Main Functions
-function generateMeters(params, climatZone) {
+
+/**
+ * Each generated meter will be like:
+ * {
+ *  climat: "Continental"
+ * 	line: [
+ * 		Date, 			// date
+ * 		0, 				// consumption
+ * 		0, 				// highcost consumption
+ * 		0, 				// lowcost consumption
+ * 		"elec",
+ * 		"METER012345",
+ * 		42, 			// house surface
+ * 		(20.00, 		// temperature)
+ * 		("Paris",
+ * 		 "75", 			// city's region number
+ * 		 42..., 		// latitude
+ * 		 7... 			// longitude)
+ * 	],
+ * 	meteoCoefs: [		// meteo station distance coef (sum of coefs=1)
+ * 		{id:42, coef:0.75},
+ * 		{id:69, coef:0.10},
+ * 		{id:123, coef:0.05}
+ * 	]
+ * }
+ *
+ */
+function generateMeters(params, climatZone, configMeteo) {
 	const locations = getLocations(params.locationsFile, params.metersNumber);
 	if(global.gc) gc(); // Because getLocation loading a file
 
@@ -642,18 +679,45 @@ function generateMeters(params, climatZone) {
 	        'METER' + ('00000' + curr_id).slice(-6),
 	       	houseSurface
 	    ];
-	    if(params.temp)
-	        meter.line.push('20.00');
-
-	    if(params.location) {
+	    if(params.temp || params.location) {
 	    	// ÷2 (stddev should be radius/2)
 	    	const latitude =  randgen.rnorm(city.latitude, city.radius*kmToLat/2);
 	        const longitude = randgen.rnorm(city.longitude, city.radius*kmToLon/2);
 
-	        meter.line.push(city.name);
-	        meter.line.push(city.region);
-	        meter.line.push(latitude.toFixed(6));
-	        meter.line.push(longitude.toFixed(6));
+		    if(params.temp) {
+		    	const meteoCoefs = [];
+
+		    	// find nearest meteo data
+		    	for(let thisConfMeteo of configMeteo.values()) {
+		    		const distance = (latitude-thisConfMeteo.lat)*(latitude-thisConfMeteo.lat) + (longitude-thisConfMeteo.lon)*(longitude-thisConfMeteo.lon);
+
+	    			const coef = 1/(distance+0.001);
+	    			if(coef > 1e-4) // ignore far data
+	    				meteoCoefs.push({id:thisConfMeteo.id, coef:coef});
+		    	}
+
+		    	meteoCoefs.sort((a,b)=>b.coef-a.coef);
+		    	meteoCoefs.splice(5); // Keep only 5 neerest meteo coefs
+
+		    	// compute total of coefs (to reduce-it to 1)
+		    	let totalCoefs = 0;
+		    	for(let i=meteoCoefs.length-1; i>=0; i--)
+		    		totalCoefs += meteoCoefs[i].coef;
+
+		    	// compute meteo coefs for the meter
+		    	for(let i=meteoCoefs.length-1; i>=0; i--)
+		    		meteoCoefs[i].coef /= totalCoefs;
+
+				meter.meteoCoefs = meteoCoefs;
+		        meter.line.push(null); // will be set later
+		    }
+
+		    if(params.location) {
+		        meter.line.push(city.name);
+		        meter.line.push(city.region);
+		        meter.line.push(latitude.toFixed(6));
+		        meter.line.push(longitude.toFixed(6));
+		    }
 	    }
 
 	    // Add data to files for this meter
@@ -663,13 +727,14 @@ function generateMeters(params, climatZone) {
 	return metersTab;
 }
 
-function generateDataLoop(params, configClimat, configConsum, metersTab) {
+function generateDataLoop(params, configClimat, configConsum, metersTab, configMeteo) {
 	// Declaring variables here for reusage (memory gestion)
 	let lastDateHour = 25; // force nextDay for first date
 	let season;
 	let dayOfWeek;
 	let fileName = params.out;
 	let dateHour;
+	let dateMonth;
 	let i;
 	let dayTime;
 	let meter;
@@ -690,7 +755,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab) {
 			}
 
 	        // Hot season (March -> November)
-	    	const dateMonth = d.format('MM')|0;
+	    	dateMonth = d.format('MM')|0;
 	        season = (dateMonth<11 && dateMonth>3) ? 'hotS' : 'coldS';
 
 	        // Working day (MTWTF)
@@ -740,8 +805,9 @@ function generateDataLoop(params, configClimat, configConsum, metersTab) {
 		    meter.line[(dateHour>6 && dateHour<22)?3:2] += curr_conso*0.001; // (if in [7h - 21h] so highcost then lowcost), convert to KWh
 		    meter.line[0] = d.format();
 
-		    //if(wantTemperature) 
-		    	//meter.line[7] = TODO;
+		    if(params.temp) {
+		    	meter.temperature = computeTemperature(d, meter.meteoCoefs, configMeteo);
+		    }
 		    // Update Line
 		    //
 
@@ -772,6 +838,50 @@ function generateDataLoop(params, configClimat, configConsum, metersTab) {
 }
 // Main Functions
 //
+
+
+function computeTemperature(date, meteoCoefs, configMeteo) {
+	if(meteoCoefs.length === 0) {
+		return ''; // if no data, return nothing
+	}
+
+	// compute meteo value
+	let min1 = 0; // current month maximum & minimum temperatures
+	let max1 = 0;
+	let min2 = 0; // next month maximum & minimum temperatures
+	let max2 = 0;
+
+	// hours since midnight, with decimals
+	const hoursSinceMid = date.diff(date.clone().startOf('day'), 'hour', true);
+
+	// month since begining of the year, with decimals
+	let months = date.diff(date.clone().startOf('year'), 'month', true);
+	const month1 = months|0;
+	const month2 = month1+1;
+
+	for(let meteoCoefIdx=meteoCoefs.length-1; meteoCoefIdx>=0; meteoCoefIdx--) {
+		const currMeteoCoef = meteoCoefs[meteoCoefIdx];
+		const meteoData = configMeteo.get(currMeteoCoef.id);
+		min1 += currMeteoCoef.coef * meteoData.min[month1];
+		max1 += currMeteoCoef.coef * meteoData.max[month1];
+		min2 += currMeteoCoef.coef * meteoData.min[month2];
+		max2 += currMeteoCoef.coef * meteoData.max[month2];
+	}
+
+	// interpol months data
+	months -= month1;
+	max1 = max1*months + max2*(1-months);
+	min1 = min1*months + min2*(1-months);
+
+	// interpol day data (as minimum temperature is at 4AM, and maximum temperature at 4PM) and return
+	if(hoursSinceMid >= 4 && hoursSinceMid <= 16) { // day (temp increasing)
+				// [4,16] -> [0,1]		-> [min,max]
+		return ((hoursSinceMid-4)/12 * (max1-min1) +min1).toFixed(2);
+	} else { // night (temp reducing)
+				// [0,4]u[16,24] -> [0,1]	   -> [min,max]
+		return ( (1-((hoursSinceMid+8)%24)/12) *(max1-min1) +min1 ).toFixed(2);
+	}
+}
 
 function printProgress(progress, max) {
 	const memu = process.memoryUsage().heapUsed;

@@ -1,7 +1,7 @@
 {
   "name": "meter_gen",
-  "version": "1.0.0",
-  "description": "npm install # execution \t./meter_gen [number of meters [1-1 million user] [period_from] [period_to] [interval_minutes] [-temp] [-location]",
+  "version": "4.0.1",
+  "description": "",
   "main": "meter_gen.js",
   "dependencies": {
     "async": "^2.3.0",
