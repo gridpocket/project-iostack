@@ -216,6 +216,10 @@ function buildFolder(folderPath) {
 	}
 	return true;
 }
+
+function distance(ax,ay,bx,by) {
+	return (ax-bx)*(ax-bx)+(ay-by)*(ay-by);
+}
 // Util functions
 // 
 
@@ -275,8 +279,8 @@ function getParameters(args) {
 		params.metersNumber = null;
 	} else {
 		const nb_meters = params.metersNumber|0;
-		if(nb_meters <= 0 || nb_meters > 999999) {
-	    	console.error('ERROR: Number of meters should be between 1 and 999999 (was "'+params.metersNumber+'")');
+		if(nb_meters <= 0) {
+	    	console.error('ERROR: Number of meters should be more than 0 (was "'+params.metersNumber+'")');
 	    	errNb++;
 			params.metersNumber = null;
 	    } else {
@@ -517,11 +521,8 @@ function getMeteoConfig(meteoFileName) {
 	const meteoFile = JSON.parse(fs.readFileSync(params.meteoFile));
 
 	const meteoConfig = new Map();
-	let currMeteoData;
-	for(let i=meteoFile.length-1; i>=0; i--) {
-		currMeteoData = meteoFile[i];
-		meteoConfig.set(currMeteoData.id, currMeteoData);
-	}
+	for(let i=meteoFile.length-1; i>=0; i--)
+		meteoConfig.set(meteoFile[i].id, meteoFile[i]);
 
 	return meteoConfig;
 }
@@ -620,16 +621,21 @@ function generateMeters(params, climatZone, configMeteo) {
 	const locations = getLocations(params.locationsFile, params.metersNumber);
 	if(global.gc) gc(); // Because getLocation loading a file
 
+	//
+	// constants for execution
+	const sortByCoef = (a,b)=>b.coef-a.coef;
+	const houseSurfaceChances = {'20':0.25, '50':0.25, '70':0.25, '100':0.25};
+	const consoTypeChances = {'elec':0.25, 'gas':0.75};
+	// constants for execution
+	//
+
 	const metersTab = [];
-	const kmToLat = 0.00901329460; // 360/39941 = ( 360° / Earth circumference (polar) in km ) 
-	const kmToLon = 0.00898315658; // 360/40075 = ( 360° / Earth circumference (equator) in km )
 	let cityMeteoCenters;
 	let curr_id = 0;
 
 	// Go forwoard until the startID (ignoring the firsts locations)
 	while(curr_id < params.startID) {
 		const city = locations[0]; // city: {country,region,city,lattitude,longitude,radius,pop}
-
 		const dec = (city.pop < params.startID-curr_id) ? city.pop : params.startID-curr_id;
 
 		city.pop -= dec;
@@ -652,11 +658,10 @@ function generateMeters(params, climatZone, configMeteo) {
 	    	process.exit(-1);
 	    }
 
-	    let houseSurface = chooseBetween({'20':0.25, '50':0.25, '70':0.25, '100':0.25});
 	    let consumptionType;
 	    switch(params.meterTypes) {
     	case 'mixed':
-        	consumptionType = chooseBetween({'elec':0.25, 'gas':0.75});
+        	consumptionType = chooseBetween(consoTypeChances);
         	break;
     	case 'gas':
         	consumptionType = 'gas';
@@ -672,29 +677,28 @@ function generateMeters(params, climatZone, configMeteo) {
 	        0, // lowcost
 	        consumptionType,
 	        'METER' + ('00000' + curr_id).slice(-6),
-	       	houseSurface
+	       	chooseBetween(houseSurfaceChances) // home surface
 	    ];
 	    if(params.temp || params.location) {
 	    	// ÷2 (stddev should be radius/2)
-	    	const latitude =  randgen.rnorm(city.latitude, city.radius*kmToLat/2);
-	        const longitude = randgen.rnorm(city.longitude, city.radius*kmToLon/2);
+	    	const latitude =  randgen.rnorm(city.latitude, city.radius*0.0045066473); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
+	        const longitude = randgen.rnorm(city.longitude, city.radius*0.00449157829); // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
 
 		    if(params.temp) {
-		    	let distance;
 		    	let thisConfMeteo;
 
-		    	if(lastCity !== city && city.pop < 2) {
-		    		cityMeteoCenters = Array.from(configMeteo.values());
-		    	} else if(lastCity !== city) { // compute city nearest meteo centers (only for cities of 2 or more meters)
-		    		cityMeteoCenters = [];
+			    // If changed city, and cityMeteoCenters not already = Array.from(configMeteo.values());
+		    	if(lastCity !== city && !(lastCity !== null && lastCity.pop < 2 && city.pop < 2)) {
+			    	if(city.pop < 2) {
+			    		cityMeteoCenters = Array.from(configMeteo.keys());
+			    	} else { // compute city's nearest meteo centers (only for cities of 2 or more meters)
+			    		cityMeteoCenters = [];
 
-			    	// find nearest meteo data in all France meteo centers
-			    	for(thisConfMeteo of configMeteo.values()) {
-			    		distance = (city.latitude-thisConfMeteo.lat)*(city.latitude-thisConfMeteo.lat) +
-			    						 (city.longitude-thisConfMeteo.lon)*(city.longitude-thisConfMeteo.lon);
-
-		    			if(distance < 1) // ignore far data (data from more than 1°Lat/lon distance)
-		    				cityMeteoCenters.push(thisConfMeteo);
+				    	// find nearest meteo data in all France meteo centers
+				    	for(let [key,thisConfMeteo] of configMeteo) {
+			    			if(distance(city.latitude, city.longitude, thisConfMeteo.lat, thisConfMeteo.lon) < 1) // ignore far data (data from more than 1°Lat/lon distance)
+			    				cityMeteoCenters.push(key);
+				    	}
 			    	}
 		    	}
 
@@ -703,15 +707,13 @@ function generateMeters(params, climatZone, configMeteo) {
 					meter.meteoCoefs = [];
 		    	} else {
 			    	const meteoCoefs = [];
-			    	// find nearest meteo data
+			    	// find meter's nearest meteo centers
 			    	for(let i=cityMeteoCenters.length-1; i>=0; i--) {
-			    		thisConfMeteo = cityMeteoCenters[i];
-			    		distance = (latitude-thisConfMeteo.lat)*(latitude-thisConfMeteo.lat) + (longitude-thisConfMeteo.lon)*(longitude-thisConfMeteo.lon);
-		    			meteoCoefs.push({id:thisConfMeteo.id, coef:1/(distance+0.001)});
+			    		thisConfMeteo = configMeteo.get(cityMeteoCenters[i]);
+		    			meteoCoefs.push({id:thisConfMeteo.id, coef:1/(distance(latitude, longitude, thisConfMeteo.lat, thisConfMeteo.lon)+0.001)});
 			    	}
 
-			    	meteoCoefs.sort((a,b)=>b.coef-a.coef);
-			    	meteoCoefs.splice(5); // Keep only 5 neerest meteo coefs
+			    	meteoCoefs.sort(sortByCoef).splice(5); // Keep only 5 nearest meteo coefs
 
 			    	// compute total of coefs (to reduce-it to 1)
 			    	let totalCoefs = 0;
