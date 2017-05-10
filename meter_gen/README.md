@@ -109,7 +109,7 @@ node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12
 ```
 
 ### Examples using config file
-Config file './config.json':
+Config file `./config.json`:
 
 ```json
 {	"metersNumber":1000,
@@ -160,12 +160,12 @@ date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,long
 
 as a Table:
 
-	| date | index | sumHC | sumHP | type | vid | size | temp | city | region | lat | long |
-	| ---- | ----- | ----- | ----- | ---- | --- | ---- | ---- | ---- | ------ | --- | ---- |
-	| 2016-02-01T00:00:00+01:00 | 255.894 | 0.255 | 0 | elec | METER000054 | 50 | 6.72 | Paris    | 75 | 48.848158 | 2.327835 |
-	| 2016-02-01T00:00:00+01:00 | 215.997 | 0.215 | 0 | elec | METER000053 | 20 | 2.77 | Chambéry | 73 | 45.576691 | 5.944346 |
-	| 2016-02-01T00:00:00+01:00 | 380.576 | 0.380 | 0 | elec | METER000052 | 70 | 6.18 | Le Mans  | 72 | 47.962022 | 0.198747 |
-	
+| date | index | sumHC | sumHP | type | vid | size | temp | city | region | lat | long |
+| ---- | ----- | ----- | ----- | ---- | --- | ---- | ---- | ---- | ------ | --- | ---- |
+| 2016-02-01T00:00:00+01:00 | 255.894 | 0.255 | 0 | elec | METER000054 | 50 | 6.72 | Paris    | 75 | 48.848158 | 2.327835 |
+| 2016-02-01T00:00:00+01:00 | 215.997 | 0.215 | 0 | elec | METER000053 | 20 | 2.77 | Chambéry | 73 | 45.576691 | 5.944346 |
+| 2016-02-01T00:00:00+01:00 | 380.576 | 0.380 | 0 | elec | METER000052 | 70 | 6.18 | Le Mans  | 72 | 47.962022 | 0.198747 |
+
 # Information
 This meter generator use a locations.json file to add city information.
 This locations.json file is a copy of data base from a french site (http://sql.sh/736-base-donnees-villes-francaises)
