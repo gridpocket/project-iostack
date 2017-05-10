@@ -3,27 +3,30 @@ Meter_gen is an application generating synthetic datasets similar to real smart 
 All data (indexes, temperature, locations) are generated using random and statistics only, and are not real values. 
 
 The application needs the following paramenters:
-	-metersNumber [integer]
-	-beginDate [yyyy/mm/dd as string]
-	-endDate [yyyy/mm/dd as string]
-	-interval [integer]
-	-meterTypes ['electric'/'gas'/'mixed']
-	-consumptionsFile [.json file]
-	-climatFile [.json file]
-	-locationsFile [.json file]
+
+- -metersNumber [integer]
+- -beginDate [yyyy/mm/dd as string]
+- -endDate [yyyy/mm/dd as string]
+- -interval [integer]
+- -meterTypes ['electric'/'gas'/'mixed']
+- -consumptionsFile [.json file]
+- -climatFile [.json file]
+- -locationsFile [.json file]
+
 
 The application accepts the following options:
-	-config [.json file]
-	-maxFileSize [size]
-	-separateDataBy [integer]
-	-startID [integer]
-	-lastID [integer]
-	-temp [boolean]
-	-meteoFile [file]
-	-location [boolean]
-	-out [.csv path]
-	-debug [boolean]
-	-help
+
+- -config [.json file]
+- -maxFileSize [size]
+- -separateDataBy [integer]
+- -startID [integer]
+- -lastID [integer]
+- -temp [boolean]
+- -meteoFile [file]
+- -location [boolean]
+- -out [.csv path]
+- -debug [boolean]
+- -help
 
 The parameters and options can be set in the command line, or in a json config file (see -config option).
 (More details for parameters and options in usageMessage.txt)
@@ -148,14 +151,15 @@ node ./meter_gen.js -config './anotherConfig.json'
 	
 # Example of generated csv file content:
 ```csv
-	date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,long
-	2016-02-01T00:00:00+01:00,255.8944154089721,0.2558944154089721,0,elec,METER000054,50,6.72,Paris,75,48.848158,2.327835
-	2016-02-01T00:00:00+01:00,215.99777334278065,0.21599777334278064,0,elec,METER000053,20,2.77,Chambéry,73,45.576691,5.944346
-	2016-02-01T00:00:00+01:00,380.5763987238543,0.3805763987238543,0,elec,METER000052,70,6.18,Le Mans,72,47.962022,0.198747
-	...
+date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,long
+2016-02-01T00:00:00+01:00,255.8944154089721,0.2558944154089721,0,elec,METER000054,50,6.72,Paris,75,48.848158,2.327835
+2016-02-01T00:00:00+01:00,215.99777334278065,0.21599777334278064,0,elec,METER000053,20,2.77,Chambéry,73,45.576691,5.944346
+2016-02-01T00:00:00+01:00,380.5763987238543,0.3805763987238543,0,elec,METER000052,70,6.18,Le Mans,72,47.962022,0.198747
+...
 ```
 
-as Table:
+as a Table:
+
 	| date | index | sumHC | sumHP | type | vid | size | temp | city | region | lat | long |
 	| ---- | ----- | ----- | ----- | ---- | --- | ---- | ---- | ---- | ------ | --- | ---- |
 	| 2016-02-01T00:00:00+01:00 | 255.894 | 0.255 | 0 | elec | METER000054 | 50 | 6.72 | Paris    | 75 | 48.848158 | 2.327835 |
@@ -169,11 +173,12 @@ This locations.json file is a copy of data base from a french site (http://sql.s
 Type of consumption: gas / electric / mixed
 
 Consumption is calculated by differents parameters:
-	-Time (4 possibilities: 00h -> 06h, 06h -> 9h, 9h > 17h, 17h -> 24h)
-	-Days (2 possibilities: Working day (Monday to Friday) or Weekend (Saturday & Sunday))
-	-Season (2 possibilities: Hot season (May to October), Cold Season (November to April))
-	-Size of accommodations (4 possibilites: 20m², 50m², 70m², 100m²)
-	-Type of consumption (2 possibilities: Electric or not (gas))
+
+- Time (4 possibilities: 00h -> 06h, 06h -> 9h, 9h > 17h, 17h -> 24h)
+- Days (2 possibilities: Working day (Monday to Friday) or Weekend (Saturday & Sunday))
+- Season (2 possibilities: Hot season (May to October), Cold Season (November to April))
+- Size of accommodations (4 possibilites: 20m², 50m², 70m², 100m²)
+- Type of consumption (2 possibilities: Electric or not (gas))
 
 # Licence
 The meter_gen application is open source, free to modify and to be used for all non-commercial and commercial purposes.
@@ -184,4 +189,5 @@ Society: GridPocket SAS, for IOStack project
 Email contact@gridpocket.com for more information.
 
 Last Modified by:   Nathaël Noguès
+
 Last Modified time: 2017-05-10
