@@ -1,28 +1,7 @@
 # @Author: Nathaël Noguès
 # @Date:   2017-04-14
 # @Last Modified by:   Nathaël Noguès
-# @Last Modified time: 2017-05-09
-
-<<COMMENT
-node meter_gen 
-	-config [.json file]
-	-metersNumber [integer]
-	-beginDate [yyyy/mm/dd as string]
-	-endDate [yyyy/mm/dd as string]
-	-interval [integer]
-	-meterTypes ['electric'/'gas'/'mixed']
-	-maxFileSize [size]
-	-separateDataBy [integer]
-	-startID [integer]
-	-lastID [integer]
-	-temp [boolean]
-	-location [boolean]
-	-consumptionsFile [.json file]
-	-climatFile [.json file]
-	-locationsFile [.json file]
-	-out [.csv filepath] (not able if -separateDataBy or -maxFileSize)
-	-out [folder path] (only able if -separateDataBy of -maxFileSize)
-COMMENT
+# @Last Modified time: 2017-05-10
 
 echo 'TEST ELEC'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from electric heater houses

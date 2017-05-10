@@ -226,7 +226,7 @@ function distance(ax,ay,bx,by) {
 //
 // Preparing parser functions
 function getParameters(args) {	
-	if(args.indexOf('-h') >= 0) {
+	if(args.indexOf('-h') >= 0 || args.indexOf('-help')) {
 		const usageMessage = require('usageMessage.txt');
 		console.log(usageMessage);
 		process.exit(0); // not an error
@@ -440,7 +440,7 @@ function getParameters(args) {
 
 	// Out file
 	if(params.out === null) {
-		params.out = './out/'+moment().format('YYYYMMDDHHmmss')+'/';
+		params.out = './'+moment().format('YYYYMMDDHHmmss')+'/';
 	} else if (params.out === '') {
 		console.error('ERROR: out need an argument ('+((params.maxFileSize !== null || params.separateDataBy !== null)?'folder path':'csv file path'));
 		errNb++;
@@ -457,9 +457,13 @@ function getParameters(args) {
 			console.error('ERROR: Impossible to go to or create the folder:', e);
 			errNb++;
 		}
+
+		if(params.maxFileSize !== null) {
+			params.out += params.startID + '-';
+		}
 	} else {
 		if(params.out.endsWith('/'))
-			params.out += 'meter_gen.csv';
+			params.out += 'generated.csv';
 
 		let folder = params.out.match(/^(.*)\//);
 		folder = (folder.length > 0)?folder[0]:'./';
