@@ -9,5 +9,5 @@ node ../meter_gen.js -config './statGenConf.json' -metersNumber 3000 -beginDate 
 
 echo
 echo "Generating Year temperatures..."
-# a data each 12 hours (at 12AM and 12PM)
-node ../meter_gen.js -config './statGenConf.json' -metersNumber 3000 -beginDate '2016/01/01' -interval 720 -endDate '2017/01/01' -temp -out './statgen/dayTemperatures.csv'
+# a data each 6 hours (at 6AM, 12AM, 6PM and 12PM)
+node ../meter_gen.js -config './statGenConf.json' -metersNumber 3000 -beginDate '2016/01/01' -interval 360 -endDate '2017/01/01' -temp -out './statgen/yearTemperatures.csv'
