@@ -15,6 +15,8 @@
 /* jshint esversion: 6 */
 
 var map1;
+
+console.log('LOADED !!');
 function initMap1() {
 	map1 = new Map('map1');
 }
