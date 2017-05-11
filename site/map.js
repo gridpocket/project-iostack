@@ -17,13 +17,10 @@
 var map1;
 function initMap1() {
 	map1 = new Map('map1');
-	map1.addPoint(46.36, 2.7, 0.9);
-	map1.addPoint(46.35, 2.6, 1.1);
-	map1.centerAndZoom();
 }
 
 function Map(mapName) {
-	const mapParams = {zoom: 0,center: {lat:0, lng:0}};
+	const mapParams = {zoom: 5,center: {lat:42, lng:7}}; // show mediteranean zone by default
 	this.map = new google.maps.Map(document.getElementById(mapName), mapParams);
 	this.data = new google.maps.MVCArray();
 
