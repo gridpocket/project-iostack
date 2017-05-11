@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-05-10
+ * @Last Modified time: 2017-05-11
  *
  * Usage : 
  *	  node meter_gen -config [configuration file] (-metersNumber) (-beginDate) (-endDate) (-interval) (-meterTypes) (options...)
@@ -226,8 +226,8 @@ function distance(ax,ay,bx,by) {
 //
 // Preparing parser functions
 function getParameters(args) {	
-	if(args.indexOf('-h') >= 0 || args.indexOf('-help')) {
-		const usageMessage = require('usageMessage.txt');
+	if(args.indexOf('-h') >= 0 || args.indexOf('-help') >= 0) {
+		const usageMessage = fs.readFileSync(__dirname+'/usageMessage.txt', 'utf8');
 		console.log(usageMessage);
 		process.exit(0); // not an error
 	}
