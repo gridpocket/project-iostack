@@ -16,7 +16,6 @@
 
 var map1;
 
-console.log('LOADED !!');
 function initMap1() {
 	map1 = new Map('map1');
 }
@@ -59,7 +58,9 @@ function Map(mapName) {
 			'rgba(127, 255, 0, 1)',
 			'rgba(255, 255, 0, 1)',
 			'rgba(255, 127, 0, 1)',
-			'rgba(255, 0, 0, 1)']
+			'rgba(255, 0, 0, 1)'],
+		radius: 20,
+		maxIntensity: ''
 	});
 
 	this.addPoint = function(lat, lng, wgt) {

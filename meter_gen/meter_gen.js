@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-05-11
+ * @Last Modified time: 2017-05-12
  *
  * Usage : 
  *	  node meter_gen -config [configuration file] (-metersNumber) (-beginDate) (-endDate) (-interval) (-meterTypes) (options...)
@@ -888,8 +888,8 @@ function computeTemperature(date, meteoCoefs, configMeteo, hoursSinceMid, months
 
 	// interpol months data
 	months -= month1;
-	max1 = max1*months + max2*(1-months);
-	min1 = min1*months + min2*(1-months);
+	max1 = max1*(1-months) + max2*months;
+	min1 = min1*(1-months) + min2*months;
 
 	// interpol day data (as minimum temperature is at 4AM, and maximum temperature at 4PM) and return
 	if(hoursSinceMid >= 4 && hoursSinceMid <= 16) { // day (temp increasing)
