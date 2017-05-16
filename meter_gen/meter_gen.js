@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-05-12
+ * @Last Modified time: 2017-05-16
  *
  * Usage : 
  *	  node meter_gen -config [configuration file] (-metersNumber) (-beginDate) (-endDate) (-interval) (-meterTypes) (options...)
@@ -86,7 +86,7 @@ function getFile(params, fileName, createIfNotExists=true) {
 	if(params.temp)
 		firstLine.push('temp');
 	if(params.location)
-		firstLine.push('city,region,lat,long');
+		firstLine.push('city,region,lat,lng');
 
 	if(!appendToFile(params, fileName, firstLine)) { // should be after 'openFiles.set' to not have infinite recursive loop
 		console.error('ERROR: Head line larger than given Max file size');
@@ -549,8 +549,8 @@ function getLocations(locationsFileName, totalPop) {
 			country: curr_loc.country, // "FRA"
 			region: curr_loc.region, // 6
 			name: curr_loc.city, // 'Nice'
-			latitude: curr_loc.latitude, // 43.7
-			longitude: curr_loc.longitude, // 7.25
+			lat: curr_loc.latitude, // 43.7
+			lng: curr_loc.longitude, // 7.25
 
 			// pop:343304 dens:4773 => radius of 4.78485496485km
 			// density <1 => 1  to avoid errors (dividing 0 or negative values)
@@ -685,8 +685,8 @@ function generateMeters(params, climatZone, configMeteo) {
 	    ];
 	    if(params.temp || params.location) {
 	    	// ÷2 (stddev should be radius/2)
-	    	const latitude =  randgen.rnorm(city.latitude, city.radius*0.0045066473); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
-	        const longitude = randgen.rnorm(city.longitude, city.radius*0.00449157829); // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
+	    	const lat =  randgen.rnorm(city.lat, city.radius*0.0045066473); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
+	        const lng = randgen.rnorm(city.lng, city.radius*0.00449157829); // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
 
 		    if(params.temp) {
 		    	let thisConfMeteo;
@@ -700,21 +700,21 @@ function generateMeters(params, climatZone, configMeteo) {
 
 				    	// find nearest meteo data in all France meteo centers
 				    	for(let [key,thisConfMeteo] of configMeteo) {
-			    			if(distance(city.latitude, city.longitude, thisConfMeteo.lat, thisConfMeteo.lon) < 1) // ignore far data (data from more than 1°Lat/lon distance)
+			    			if(distance(city.lat, city.lng, thisConfMeteo.lat, thisConfMeteo.lng) < 1) // ignore far data (data from more than 1°Lat/lng distance)
 			    				cityMeteoCenters.push(key);
 				    	}
 			    	}
 		    	}
 
 		    	if(cityMeteoCenters.length <= 0) {
-		    		console.log('WARNING: No meteoCenter around', city.name+', lat:', city.latitude+', lon:', city.longitude);
+		    		console.log('WARNING: No meteoCenter around', city.name+', lat:', city.lat+', lng:', city.lng);
 					meter.meteoCoefs = [];
 		    	} else {
 			    	const meteoCoefs = [];
 			    	// find meter's nearest meteo centers
 			    	for(let i=cityMeteoCenters.length-1; i>=0; i--) {
 			    		thisConfMeteo = configMeteo.get(cityMeteoCenters[i]);
-		    			meteoCoefs.push({id:thisConfMeteo.id, coef:1/(distance(latitude, longitude, thisConfMeteo.lat, thisConfMeteo.lon)+0.001)});
+		    			meteoCoefs.push({id:thisConfMeteo.id, coef:1/(distance(lat, lng, thisConfMeteo.lat, thisConfMeteo.lng)+0.001)});
 			    	}
 
 			    	meteoCoefs.sort(sortByCoef).splice(5); // Keep only 5 nearest meteo coefs
@@ -736,8 +736,8 @@ function generateMeters(params, climatZone, configMeteo) {
 		    if(params.location) {
 		        meter.line.push(city.name);
 		        meter.line.push(city.region);
-		        meter.line.push(latitude.toFixed(6));
-		        meter.line.push(longitude.toFixed(6));
+		        meter.line.push(lat.toFixed(6));
+		        meter.line.push(lng.toFixed(6));
 		    }
 	    }
 

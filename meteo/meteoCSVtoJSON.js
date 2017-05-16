@@ -7,7 +7,7 @@
 * @File name:	meteoCSVtoJSON.js
 * @Date:   2017-05-09
 * @Last Modified by:   Nathaël Noguès
-* @Last Modified time: 2017-05-09
+* @Last Modified time: 2017-05-16
 *
 * @Description:
 */
@@ -45,7 +45,7 @@ lineReader.on('line', line => {
 		const obj = {
 			id: id,
 			lat: parseFloat(tab[1]),
-			lon: parseFloat(tab[2]),
+			lng: parseFloat(tab[2]),
 			min: [null,null,null,null,null,null,null,null,null,null,null,null],
 			max: [null,null,null,null,null,null,null,null,null,null,null,null],
 			heat: [null,null,null,null,null,null,null,null,null,null,null,null],
