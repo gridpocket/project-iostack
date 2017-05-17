@@ -1,5 +1,5 @@
 # Meter_gen
-Meter_gen is an application generating synthetic datasets similar to real smart meters logs.
+Meter_gen is an application generating synthetic datasets similar to real smart meters logs.  
 All data (indexes, temperature, locations) are generated using random and statistics only, and are not real values. 
 
 The application needs the following paramenters:
@@ -8,15 +8,14 @@ The application needs the following paramenters:
 - -beginDate [yyyy/mm/dd as string]
 - -endDate [yyyy/mm/dd as string]
 - -interval [integer]
-- -meterTypes ['electric'/'gas'/'mixed']
 - -consumptionsFile [.json file]
 - -climatFile [.json file]
 - -locationsFile [.json file]
 
-
 The application accepts the following options:
 
 - -config [.json file]
+- -metersType ['elec'/'electric'/'gas'/'mix'/'mixed']
 - -maxFileSize [size]
 - -separateDataBy [integer]
 - -startID [integer]
@@ -28,7 +27,7 @@ The application accepts the following options:
 - -debug [boolean]
 - -help
 
-The parameters and options can be set in the command line, or in a json config file (see -config option).
+The parameters and options can be set in the command line, or in a json config file (see -config option).  
 (More details for parameters and options in usageMessage.txt)
 
 # File Structure
@@ -90,21 +89,21 @@ node --expose-gc meter_gen.js (-options)
 ## Examples
 
 ### Examples with all options in command line
-Note that a `./config.json` file should not exists to get the follwing results
+Note that a `./config.json` file should not exists to get the follwing results  
 (however, the options set in this config file will be used too)
 
 ```shell
-# Generating for 1000 meters in houses using electric heater, the meters 0 till 999
+# Generating for 1000 meters in houses, all the meters (vid 0 till 999)
 # 1 data each hour (60minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
 # Generate all into only one file (default): './20170510152043/generated.csv'; 
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
-node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 60 -meterTypes 'electric' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
+node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
 
-# Generating for 1000 meters in houses not using electric heater ('gas'), the meters 250 till 499,
+# Generating for 1000 meters in houses not using electric heater ('gas'), only the meters 250 till 499,
 # 2 data each hour (30minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
 # Generate all into multiples 1MB files that will be located into ./out/ folder, files named {startID}-{index}.csv (250-1.csv 250-2.csv ...)
 # adding locations and temperatures to generated file
-node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 30 -meterTypes 'gas' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' \
+node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 30 -metersType 'gas' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' \
 	-maxFileSize 1M -startID 250 -lastID 500 -location -temp -meteoFile './configs/meteoData.json' -out './out/'
 ```
 
@@ -116,7 +115,7 @@ Config file `./config.json`:
 	"beginDate":"2016/02/01",
 	"endDate":"2016/05/01",
 	"interval": 120,
-	"meterTypes": "electric",
+	"metersType": "electric",
 	"consumptionsFile": "./configs/consumptions.json",
 	"climatFile": "./configs/climats.json",
 	"locationsFile": "./configs/locations.json",
@@ -151,7 +150,7 @@ node ./meter_gen.js -config './anotherConfig.json'
 	
 # Example of generated csv file content:
 ```csv
-date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,long
+date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,lng
 2016-02-01T00:00:00+01:00,255.8944154089721,0.2558944154089721,0,elec,METER000054,50,6.72,Paris,75,48.848158,2.327835
 2016-02-01T00:00:00+01:00,215.99777334278065,0.21599777334278064,0,elec,METER000053,20,2.77,Chambéry,73,45.576691,5.944346
 2016-02-01T00:00:00+01:00,380.5763987238543,0.3805763987238543,0,elec,METER000052,70,6.18,Le Mans,72,47.962022,0.198747
@@ -160,34 +159,23 @@ date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,long
 
 as a Table:
 
-| date | index | sumHC | sumHP | type | vid | size | temp | city | region | lat | long |
+| date | index | sumHC | sumHP | type | vid | size | temp | city | region | lat | lng |
 | ---- | ----- | ----- | ----- | ---- | --- | ---- | ---- | ---- | ------ | --- | ---- |
 | 2016-02-01T00:00:00+01:00 | 255.894 | 0.255 | 0 | elec | METER000054 | 50 | 6.72 | Paris    | 75 | 48.848158 | 2.327835 |
 | 2016-02-01T00:00:00+01:00 | 215.997 | 0.215 | 0 | elec | METER000053 | 20 | 2.77 | Chambéry | 73 | 45.576691 | 5.944346 |
 | 2016-02-01T00:00:00+01:00 | 380.576 | 0.380 | 0 | elec | METER000052 | 70 | 6.18 | Le Mans  | 72 | 47.962022 | 0.198747 |
 
-# Information
-This meter generator use a locations.json file to add city information.
-This locations.json file is a copy of data base from a french site (http://sql.sh/736-base-donnees-villes-francaises)
+# See the Wiki for more information
 
-Type of consumption: gas / electric / mixed
-
-Consumption is calculated by differents parameters:
-
-- Time (4 possibilities: 00h -> 06h, 06h -> 9h, 9h > 17h, 17h -> 24h)
-- Days (2 possibilities: Working day (Monday to Friday) or Weekend (Saturday & Sunday))
-- Season (2 possibilities: Hot season (May to October), Cold Season (November to April))
-- Size of accommodations (4 possibilites: 20m², 50m², 70m², 100m²)
-- Type of consumption (2 possibilities: Electric or not (gas))
+GitHub Wiki: https://github.com/gridpocket/project-iostack/wiki/Meter_gen
 
 # Licence
 The meter_gen application is open source, free to modify and to be used for all non-commercial and commercial purposes.
 
-Contributors : Guillaume Pilot, Filip Gluszak, César Carles, Nathaël Noguès
+Contributors : Guillaume Pilot, Filip Gluszak, César Carles, Nathaël Noguès  
 Society: GridPocket SAS, for IOStack project
 
 Email contact@gridpocket.com for more information.
 
-Last Modified by:   Nathaël Noguès
-
+Last Modified by:   Nathaël Noguès  
 Last Modified time: 2017-05-10

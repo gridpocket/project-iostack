@@ -53,8 +53,6 @@ ORDER BY temp
 # Get statistics about meters in Paris, round zone, for March 2017
 # tmp0 get all data in circle's outer square
 # tmp1 filters to compute only data in inner circle.
-# distance in tmp0 is multiplied by (2⁻¹/2) to get all points in the complete circle's inner square
-# OR in tmp0 is distance computation
 SELECT ROUND(AVG(value),2) as avg, ROUND(STDDEV(value),2) as stddev, ROUND(MAX(value+0),2) as max, ROUND(MIN(value+0),2) as min, COUNT(1) as nb
 FROM (
 	SELECT vid, (MAX(index+0)-MIN(index+0)) as value, FIRST_VALUE(lat) as lat, FIRST_VALUE(lng) as lng
@@ -64,6 +62,4 @@ FROM (
 	AND '+inPoints(48.86, 2.337, 0.4)+'
 	GROUP BY vid
 )
-WHERE '+inPoints(48.86, 2.337, 0.4*math.sqrt(2)/2)+' 
-OR (((lat-48.86)*(lat-48.86)+(lng-2.337)*(lng-2.337)) < 0.4)
-
+WHERE (SQRT((lat-48.86)*(lat-48.86)+(lng-2.337)*(lng-2.337)) < 0.4)

@@ -6,16 +6,16 @@
  * GridPocket Copyrights 2016
  * IOSTACK project www.iostack.eu
  * 
- * @Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES, Nathaël Noguès 
+ * @Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES, Nathaël NOGUÈS 
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
  * @Last Modified time: 2017-05-17
  *
  * Usage : 
- *	  node meter_gen -config [configuration file] (-metersNumber) (-beginDate) (-endDate) (-interval) (-metersType) (options...)
- *	  	or
- *	  node meter_gen -metersNumber -beginDate -endDate -interval -metersType (options...)
+ *	  node meter_gen (options...)
+ *	 or
+ *	  node --expose-gc meter_gen (options...)
  *
  * Example usage: 
  * 	node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -separateDataBy 1 -location

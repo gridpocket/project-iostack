@@ -69,11 +69,11 @@ Options:
 
 		if no lastID specified, finishing with id (metersNumber -1)
 
-	'-metersType ['electric'/'elec', 'gas', 'mix'/'mixed']:
+	'-metersType ["electric"/"elec", "gas", "mix"/"mixed"]':
 		Specify the meter type for all meters that will be generated.
-		for 'mixed' type, there is for each meter equivalent chance to be electric or gas.
+		for 'mixed' type, there is for each meter a chance to be electric or gas.
 
-		if no metersType specified, meters will be generated like using 'mixed' type.
+		if no metersType option specified, meters will be generated like using 'mixed' type.
 
 	'-temp ([boolean])':
 		with boolean is like 'true'/'false' (string ignoring case, or boolean type in json config file)
