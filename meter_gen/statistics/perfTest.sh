@@ -1,7 +1,7 @@
 # @Author: Nathaël Noguès
 # @Date:   2016-04-14
 # @Last Modified by:   Nathaël Noguès
-# @Last Modified time: 2017-05-10
+# @Last Modified time: 2017-05-17
 
 echo '1 Day, 1/30min, 100 users, mixed' # 480.000 data, ~60Mo
 node ../meter_gen.js -config './perfTestConf.json' -metersNumber 100 -endDate '2016/01/02' -out './perfTest/01d-100u.csv'
@@ -40,16 +40,16 @@ rm './perfTest/12m-01ku.csv' &
 
 
 echo
-echo '1 Day, 1/30min, 10000 users, mixed' # 480.000 data, ~60Mo
+echo '1 Day, 1/30min, 10k users, mixed' # 480.000 data, ~60Mo
 node ../meter_gen.js -config './perfTestConf.json' -metersNumber 10000 -endDate '2016/01/02' -out './perfTest/01d-10ku.csv'
 
 echo
-echo '1 Week, 1/30min, 10000 users, mixed' # 3.360.000 data ~450Mo
+echo '1 Week, 1/30min, 10k users, mixed' # 3.360.000 data ~450Mo
 node ../meter_gen.js -config './perfTestConf.json' -metersNumber 10000 -endDate '2016/01/08' -out './perfTest/07d-10ku.csv'
 rm './perfTest/07d-10ku.csv' &
 
 echo
-echo '1 Month, 1/30min, 10000 users, mixed' # 14.880.000 data, ~2 Go
+echo '1 Month, 1/30min, 10k users, mixed' # 14.880.000 data, ~2 Go
 node ../meter_gen.js -config './perfTestConf.json' -metersNumber 10000 -endDate '2016/02/01' -out './perfTest/31d-10ku.csv'
 rm './perfTest/31d-10ku.csv' &
 
@@ -58,6 +58,20 @@ rm './perfTest/31d-10ku.csv' &
 #node ../meter_gen.js -config './perfTestConf.json' -metersNumber 10000 -endDate '2017/01/01' -out './perfTest/1y-10ku.csv'
 #rm './perfTest/1y-10ku.csv' &
 
+
+# Test users number increasing
+
 echo
-echo '1 data, 1/30min, 1M users, mixed' # 14.880.000 data, ~2 Go
-node ../meter_gen.js -config './perfTestConf.json' -metersNumber 999999 -endDate '2016/01/01' -out './perfTest/1Mu.csv'
+echo '1 data, 1/30min, 100k users, mixed' # 1.488.000 data, ~200 Mo
+node ../meter_gen.js -config './perfTestConf.json' -metersNumber 100000 -endDate '2016/01/01' -out './perfTest/100ku.csv'
+rm './perfTest/100ku.csv' &
+
+echo
+echo '1 data, 1/30min, 500k users, mixed' # 7.440.000 data, ~1 Go
+node ../meter_gen.js -config './perfTestConf.json' -metersNumber 100000 -endDate '2016/01/01' -out './perfTest/500ku.csv'
+rm './perfTest/500ku.csv' &
+
+#echo
+#echo '1 data, 1/30min, 1M users, mixed' # 14.880.000 data, ~2 Go
+#node ../meter_gen.js -config './perfTestConf.json' -metersNumber 999999 -endDate '2016/01/01' -out './perfTest/1Mu.csv'
+#rm './perfTest/1Mu.csv' &

@@ -1,15 +1,15 @@
 # @Author: Nathaël Noguès
 # @Date:   2017-04-14
 # @Last Modified by:   Nathaël Noguès
-# @Last Modified time: 2017-05-10
+# @Last Modified time: 2017-05-17
 
 echo 'TEST ELEC'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from electric heater houses
-node ../meter_gen.js -meterTypes "electric" -out './out/out-elec.csv'
+node ../meter_gen.js -metersType "elec" -out './out/out-elec.csv'
 
 echo '\nTEST GAS'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from gas heater houses
-node ../meter_gen.js  -meterTypes "gas" -out './out/out-gas.csv'
+node ../meter_gen.js  -metersType "gas" -out './out/out-gas.csv'
 
 echo '\nTEST MIXED'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, some meters from electric and others in gas heated houses

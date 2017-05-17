@@ -1,7 +1,6 @@
 {
 	"beginDate":"2016/01/01",
 	"interval": 30,
-	"meterTypes": "mixed",
 	"location":true,
 	"temp":true,
 	"consumptionsFile": "../configs/consumptions.json",

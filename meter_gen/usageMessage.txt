@@ -18,10 +18,6 @@ Needs:
 		Specify the number of minutes between 2 data of the same meter.
 		interval should be 1 at minimum
 
-	'-meterTypes ['electric'/'gas'/'mixed']:
-		Specify the meter type for all meters that will be generated.
-		for 'mixed' type, there is for each meter equivalent chance to be electric or gas.
-
 	'-consumptionsFile [.json file]':
 		Specify the path to the file containing consumption average and standard deviations
 
@@ -72,6 +68,12 @@ Options:
 		Example: -lastID 30 > Last generated meter ID will be METER00029
 
 		if no lastID specified, finishing with id (metersNumber -1)
+
+	'-metersType ['electric'/'elec', 'gas', 'mix'/'mixed']:
+		Specify the meter type for all meters that will be generated.
+		for 'mixed' type, there is for each meter equivalent chance to be electric or gas.
+
+		if no metersType specified, meters will be generated like using 'mixed' type.
 
 	'-temp ([boolean])':
 		with boolean is like 'true'/'false' (string ignoring case, or boolean type in json config file)

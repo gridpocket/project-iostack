@@ -10,15 +10,15 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-05-16
+ * @Last Modified time: 2017-05-17
  *
  * Usage : 
- *	  node meter_gen -config [configuration file] (-metersNumber) (-beginDate) (-endDate) (-interval) (-meterTypes) (options...)
+ *	  node meter_gen -config [configuration file] (-metersNumber) (-beginDate) (-endDate) (-interval) (-metersType) (options...)
  *	  	or
- *	  node meter_gen -metersNumber -beginDate -endDate -interval -meterTypes (options...)
+ *	  node meter_gen -metersNumber -beginDate -endDate -interval -metersType (options...)
  *
  * Example usage: 
- * 	node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -meterTypes electric -separateDataBy 1 -location
+ * 	node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -separateDataBy 1 -location
 **/
 
 /*jshint esversion: 6 */
@@ -126,7 +126,7 @@ function loadArgs(map, recursive=[]) {
 		beginDate: null,
 		endDate: null,
 		interval: null,
-		meterTypes: null,
+		metersType: null,
 		maxFileSize: null,
 		separateDataBy: null,
 		startID: null,
@@ -325,15 +325,6 @@ function getParameters(args) {
 	    }
 	}
 
-	// Meter types
-	if(params.meterTypes === null) {
-		console.error('ERROR: meterTypes need to be specified');
-		errNb++;
-	} else if (params.meterTypes !== 'electric' && params.meterTypes !== 'gas' && params.meterTypes !== 'mixed') {
-	    console.error("ERROR: meterTypes should be 'electric', 'gas' or 'mixed' (was \""+params.meterTypes+'")');
-	    errNb++;
-	}
-
 	// Max File Size
 	if(params.maxFileSize === null || params.maxFileSize === false || params.maxFileSize === 'false') {
 		params.maxFileSize = null;
@@ -414,6 +405,17 @@ function getParameters(args) {
 	if(params.lastID <= params.startID) {
 		console.error('ERROR: startID should be less than lastID (was startID:"'+params.startID+'", lastID:"'+params.lastID+'")');
 		errNb++;
+	}
+
+
+	// Meter types
+	if(params.metersType === null || params.metersType.startsWith('mix')) {
+		params.metersType = 'mix';
+	} else if(params.metersType.startsWith('elec')) {
+		params.metersType = 'elec';
+	} else if(params.metersType !== 'gas') {
+	    console.error("ERROR: metersType should be 'elec', 'gas' or 'mixed' (was \""+params.metersType+'")');
+	    errNb++;
 	}
 
 	// Temperature
@@ -662,25 +664,13 @@ function generateMeters(params, climatZone, configMeteo) {
 	    	process.exit(-1);
 	    }
 
-	    let consumptionType;
-	    switch(params.meterTypes) {
-    	case 'mixed':
-        	consumptionType = chooseBetween(consoTypeChances);
-        	break;
-    	case 'gas':
-        	consumptionType = 'gas';
-        	break;
-    	case 'electric':
-        	consumptionType = 'elec';
-	    }
-
 		meter.line = [
 			null, // date time (will be set later)
 			0, // conso
 	        0, // highcost
 	        0, // lowcost
-	        consumptionType,
-	        'METER' + ('00000' + curr_id).slice(-6),
+	        (params.metersType === 'mix')?chooseBetween(consoTypeChances):params.metersType, // consumption type
+	        'METER' + ('00000' + curr_id).slice(-6), // Meter ID
 	       	chooseBetween(houseSurfaceChances) // home surface
 	    ];
 	    if(params.temp || params.location) {
@@ -814,7 +804,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 			}
 
  			// DataConsumption[energyType][surface]
-			//  energyType = meter.consumptionType==='electric'?'elec':'gas';
+			//  energyType = meter.consumptionType==='elec'?'elec':'gas';
 			//  surface = 's'+meter.houseType;
 			const subConfig = configConsum[meter.line[4]]['s'+meter.line[6]];
 

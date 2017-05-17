@@ -1,6 +1,5 @@
 {
 	"interval": 60,
-	"meterTypes": "electric",
 	"location":true,
 	"temp":false,
 	"consumptionsFile": "../configs/consumptions.json",

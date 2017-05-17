@@ -1,5 +1,5 @@
 echo "Generating One Elec..."
-node ../meter_gen.js -config './statGenConf.json' -metersNumber 660000 -beginDate '2017/01/01' -endDate '2017/01/01' -out './statgen/lightOneElec.csv'
+node ../meter_gen.js -config './statGenConf.json' -metersNumber 660000 -metersType 'elec' -beginDate '2017/01/01' -endDate '2017/01/01' -out './statgen/lightOneElec.csv'
 
 
 echo
