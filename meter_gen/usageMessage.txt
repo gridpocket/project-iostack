@@ -87,7 +87,7 @@ Options:
 		This option increases execution time proportionally to meters number to generate (lastID - startID),
 		can spent many time and potentially make Javascript Heap memory overflow error (depending on your machine, startID and lastID options)
 
-	'-meteoFile [file]': (useless if not -temp option)
+	'-meteoFile [.json file]': (useless if not -temp option)
 		Specity the path to the file containing meteo information
 
 	'-location ([boolean])':
