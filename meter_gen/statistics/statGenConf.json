@@ -2,7 +2,6 @@
 	"interval": 60,
 	"location":true,
 	"temp":false,
-	"out":"./statgen/",
 	"consumptionsFile": "../configs/consumptions.json",
 	"climatFile": "../configs/climats.json",
 	"locationsFile": "../configs/locations.json",

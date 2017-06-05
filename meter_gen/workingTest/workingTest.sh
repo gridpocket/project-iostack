@@ -5,35 +5,35 @@
 
 echo 'TEST ELEC'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from electric heater houses
-node ../meter_gen.js -metersType "elec" -fileNameExt 'out-elec'
+node ../meter_gen.js -metersType "elec" -out './out/out-elec/'
 
 echo '\nTEST GAS'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from gas heater houses
-node ../meter_gen.js  -metersType "gas" -fileNameExt 'out-gas'
+node ../meter_gen.js  -metersType "gas" -out './out/out-gas/'
 
 echo '\nTEST MIXED'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, some meters from electric and others in gas heated houses
-node ../meter_gen.js -fileNameExt 'out-mixed'
+node ../meter_gen.js -out './out/out-mixed/'
 
 echo '\nTEST TEMP'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, printing city name, region number and meter location
-node ../meter_gen.js -temp -fileNameExt 'temp'
+node ../meter_gen.js -temp -out './out/temp/'
 
 echo '\nTEST LOCATION'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, printing city name, region number and meter location
-node ../meter_gen.js -location -fileNameExt 'location'
+node ../meter_gen.js -location -out './out/location/'
 
 echo '\nTEST LASTID'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, computing only the first 10 meters (0 till 9)
-node ../meter_gen.js -lastID 10 -fileNameExt 'lastID'
+node ../meter_gen.js -lastID 10 -out './out/lastID/'
 
 echo '\nTEST STARTID'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, computing only the last 10 meters (90 till 99)
-node ../meter_gen.js -startID 90 -fileNameExt 'startID'
+node ../meter_gen.js -startID 90 -out './out/startID/'
 
 echo '\nTEST STARTID & LASTID'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, computing only 10 meters (45 till 54)
-node ../meter_gen.js -startID 45 -lastID 55 -fileNameExt 'start&last'
+node ../meter_gen.js -startID 45 -lastID 55 -out './out/start&last/'
 
 echo '\nTEST SEPARATEDATABY 0'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, separating files as there is one file by user (100 files)

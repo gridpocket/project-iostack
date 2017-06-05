@@ -78,6 +78,13 @@ function getFile(params, fileName, createIfNotExists=true) {
 	if(!createIfNotExists)
 		return null;
 
+
+	// Build all folders path recursively
+	if(!buildFolder(fileName)) {
+		console.error('CRITICAL: Impossible to go to or create the folder:', e);
+		process.exit(-4);
+	}
+
 	const fileDescriptor = fs.openSync(fileName, 'w');
 	openFiles.set(fileName, fileDescriptor);
 	curFileSize = 0;
@@ -203,7 +210,7 @@ function chooseBetween(tab) {
 function buildFolder(folderPath) {
 	try {
 		// Build all folders path recursively
-		folderPath.split('/')
+		(folderPath+'a').split('/').slice(0,-1)
 		  .reduce((path, folder) => {
 		  	path += folder + '/';
 		  	if (!fs.existsSync(path)) {
@@ -454,9 +461,9 @@ function getParameters(args) {
 	// File Name Extension
 	if(params.fileNameExt === null) {
 		params.fileNameExt = '.csv';
-	} else if(!params.fileNameExt.contains('.')) {	
+	} else {	
 		params.fileNameExt += '.csv';
-	} // else: nothing to do, already ending with an extension
+	}
 
 	if(!params.fileNameExt.startsWith('.'))
 		params.fileNameExt = '-' + params.fileNameExt; // add separator if starts with something else than a dot
@@ -705,7 +712,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	let month;
 	let season;
 	let dayOfWeek;
-	let fileName = params.out + params.beginDate.format('DD-MM-YYYY') + '-';
+	let fileName = params.out + params.beginDate.format('YYYY-MM-DD') + '/';
 
 	let progress = 0;
 	const progressMax = 1+ (params.endDate.valueOf() - params.beginDate.valueOf())/1000 /60 /params.interval; // compute number of loops needed
@@ -739,7 +746,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 		    	fileMoment = moment(params.beginDate.valueOf()+fileMoment);
 
 		    	const lastFileName = fileName;
-		    	fileName = params.out + fileMoment.format('YYYY-MM-DD') + '-'; // 'YYYY-MM-DD_HH-MM'
+		    	fileName = params.out + fileMoment.format('YYYY-MM-DD') + '/'; // 'YYYY-MM-DD_HH-MM'
 		    	if(lastFileName !== fileName)
 	    			fileNb = 1; // reset file number because of new day
 	        }
