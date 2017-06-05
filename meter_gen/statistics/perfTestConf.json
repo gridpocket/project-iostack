@@ -3,6 +3,8 @@
 	"interval": 30,
 	"location":true,
 	"temp":true,
+	"out":"./perfTest/",
+	"maxFileSize":"100M",
 	"consumptionsFile": "../configs/consumptions.json",
 	"climatFile": "../configs/climats.json",
 	"locationsFile": "../configs/locations.json",

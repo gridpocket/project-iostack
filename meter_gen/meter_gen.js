@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-05-17
+ * @Last Modified time: 2017-06-05
  *
  * Usage : 
  *	  node meter_gen (options...)
@@ -129,6 +129,7 @@ function loadArgs(map, recursive=[]) {
 		metersType: null,
 		maxFileSize: null,
 		separateDataBy: null,
+		fileNameExt: null,
 		startID: null,
 		lastID: null,
 		temp: null,
@@ -191,9 +192,8 @@ function chooseBetween(tab) {
 	const keys = Object.keys(tab);
 	for(let i=keys.length-1; i>=0; i--) {
 		rand -= tab[keys[i]];
-		if(rand <= 0) {
+		if(rand <= 0)
 			return keys[i];
-		}
 	}
 
     return null;
@@ -367,12 +367,6 @@ function getParameters(args) {
 		}
 	}
 
-	// Max File Size, Separate Files
-	if(params.maxFileSize !== null && params.separateDataBy !== null) {
-		console.error('ERROR: Cannot use -separateDataBy and -maxFileSize together ('+params.maxFileSize, ', ', params.separateDataBy+')');
-		errNb++;
-	}
-
 	// StartID
 	if(params.startID === null) {
 		params.startID = 0;
@@ -406,7 +400,6 @@ function getParameters(args) {
 		console.error('ERROR: startID should be less than lastID (was startID:"'+params.startID+'", lastID:"'+params.lastID+'")');
 		errNb++;
 	}
-
 
 	// Meter types
 	if(params.metersType === null || params.metersType.startsWith('mix')) {
@@ -442,15 +435,12 @@ function getParameters(args) {
 
 	// Out file
 	if(params.out === null) {
-		params.out = './'+moment().format('YYYYMMDDHHmmss')+'/';
+		params.out = './';
 	} else if (params.out === '') {
 		console.error('ERROR: out need an argument ('+((params.maxFileSize !== null || params.separateDataBy !== null)?'folder path':'csv file path'));
 		errNb++;
-	} // else keep like it is
-
-
-	// Check filePath
-	if(params.separateDataBy !== null || params.maxFileSize !== null) {
+	} else {
+		// Check filePath, add ends '/' if not already
 		if(!params.out.endsWith('/'))
 			params.out += '/';
 
@@ -459,23 +449,17 @@ function getParameters(args) {
 			console.error('ERROR: Impossible to go to or create the folder:', e);
 			errNb++;
 		}
-
-		if(params.maxFileSize !== null) {
-			params.out += params.startID + '-';
-		}
-	} else {
-		if(params.out.endsWith('/'))
-			params.out += 'generated.csv';
-
-		let folder = params.out.match(/^(.*)\//);
-		folder = (folder.length > 0)?folder[0]:'./';
-		
-		// Build all folders path recursively
-		if(!buildFolder(folder)) {
-			console.error('ERROR: Impossible to go to or create the folder:', e);
-			errNb++;
-		}
 	}
+
+	// File Name Extension
+	if(params.fileNameExt === null) {
+		params.fileNameExt = '.csv';
+	} else if(!params.fileNameExt.contains('.')) {	
+		params.fileNameExt += '.csv';
+	} // else: nothing to do, already ending with an extension
+
+	if(!params.fileNameExt.startsWith('.'))
+		params.fileNameExt = '-' + params.fileNameExt; // add separator if starts with something else than a dot
 
 	if(!params.climatFile) {
 		console.error('ERROR: climatFile need to be specified');
@@ -596,33 +580,6 @@ function getLocations(locationsFileName, totalPop) {
 
 //
 // Main Functions
-
-/**
- * Each generated meter will be like:
- * {
- *  climat: 'Continental'
- * 	line: [
- * 		Date, 			// date
- * 		0, 				// consumption
- * 		0, 				// highcost consumption
- * 		0, 				// lowcost consumption
- * 		'elec',
- * 		'METER012345',
- * 		42, 			// house surface
- * 		(20.00, 		// temperature)
- * 		('Paris',
- * 		 '75', 			// city's region number
- * 		 42..., 		// latitude
- * 		 7... 			// longitude)
- * 	],
- * 	meteoCoefs: [		// meteo station distance coef (sum of coefs=1)
- * 		{id:42, coef:0.75},
- * 		{id:69, coef:0.10},
- * 		{id:123, coef:0.05}
- * 	]
- * }
- *
- */
 function generateMeters(params, climatZone, configMeteo) {
 	const locations = getLocations(params.locationsFile, params.metersNumber);
 	if(global.gc) gc(); // Because getLocation loading a file
@@ -748,7 +705,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	let month;
 	let season;
 	let dayOfWeek;
-	let fileName = params.out;
+	let fileName = params.out + params.beginDate.format('DD-MM-YYYY') + '-';
 
 	let progress = 0;
 	const progressMax = 1+ (params.endDate.valueOf() - params.beginDate.valueOf())/1000 /60 /params.interval; // compute number of loops needed
@@ -769,39 +726,41 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	        season = (month>=4 && month<11) ? 'hotS' : 'coldS';
 
 	        // Working day (MTWTF)
-	    	const dateDay = d.format('dddd');
-	        dayOfWeek = (dateDay!=='Sunday' && dateDay!=='Saturday') ? 'wDay' : 'wEnd';
+	    	const dateDay = d.format('ddd');
+	        dayOfWeek = (dateDay!=='Sat' && dateDay!=='Sun') ? 'wDay' : 'wEnd';
 
 	        minutesSinceMid = d.diff(d.clone().startOf('day'), 'minutes');
+
+	        if(params.separateDataBy) {
+		        let fileMoment = d.valueOf() - params.beginDate.valueOf(); // dateTo have the first file number equivalent dateTo the dateFrom
+		    	fileMoment /= 60000*params.interval*params.separateDataBy; // divide by wanted interval numbers
+		    	fileMoment |= 0; // parseInt dateTo get the interval number
+		    	fileMoment *= 60000*params.interval*params.separateDataBy; // find the date corresponding dateTo the file number
+		    	fileMoment = moment(params.beginDate.valueOf()+fileMoment);
+
+		    	const lastFileName = fileName;
+		    	fileName = params.out + fileMoment.format('DD-MM-YYYY') + '-'; // 'YYYY-MM-DD_HH-MM'
+		    	if(lastFileName !== fileName)
+	    			fileNb = 1; // reset file number because of new day
+	        }
 		}
 		const hoursSinceMid = minutesSinceMid/60;
 
 	    let dayTime = 'Evening';
-	    if(hoursSinceMid <= 6) {
+	    if(hoursSinceMid <= 6)
 	        dayTime = 'Night'; // Night (00h -> 06H)
-	    } else if(hoursSinceMid <=  9) {
+	    else if(hoursSinceMid <=  9)
 	        dayTime = 'Morning';  // Morning (06h -> 09h)
-	    } else if(hoursSinceMid <=  17) {
+	    else if(hoursSinceMid <=  17)
 	        dayTime = 'Day'; // Day (09h -> 17h)
-	    } /*else {
+	    /*else
 	        dayTime = 'Evening';  // Evening(17h -> 23h59)
-	    }*/
-
-	    if(params.separateDataBy && params.separateDataBy > 0) {
-	    	let fileMoment = d.valueOf() - params.beginDate.valueOf(); // dateTo have the first file number equivalent dateTo the dateFrom
-	    	fileMoment /= 60000*params.interval*params.separateDataBy; // divide by wanted interval numbers
-	    	fileMoment |= 0; // parseInt dateTo get the interval number
-	    	fileMoment *= 60000*params.interval*params.separateDataBy; // find the date corresponding dateTo the file number
-	    	fileMoment = moment(params.beginDate.valueOf()+fileMoment).format('YYYY_MM_DD-HH_mm_ss'); // dateTo string
-
-	    	fileName = params.out + fileMoment + '.csv';
-	    }
+	    */
 
 		for(let i=metersTab.length-1; i>=0; i--) { // For each meter
 			const meter = metersTab[i];
-			if(params.separateDataBy !== null && params.separateDataBy ===0) {
-				fileName = params.out + meter.line[5] + '.csv';
-			}
+			if(params.separateDataBy !== null && params.separateDataBy ===0)
+				fileName = params.out + meter.line[5] + '-';
 
  			// DataConsumption[energyType][surface]
 			//  energyType = meter.consumptionType==='elec'?'elec':'gas';
@@ -818,27 +777,22 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 		    meter.line[(hoursSinceMid>=7 && hoursSinceMid<22)?3:2] += curr_conso*0.001; // (if in [7h - 21h] so highcost then lowcost), convert to KWh
 		    meter.line[0] = d.format();
 
-		    if(params.temp) {
+		    if(params.temp)
 		    	meter.line[7] = computeTemperature(d, meter.meteoCoefs, configMeteo, hoursSinceMid, month);
-		    }
 		    // Update Line
 		    //
 
 		    //
 		    // Write line to file
-		    if(params.maxFileSize) {
-		    	const name = params.out + fileNb + '.csv';
-				if(!appendToFile(params, name, meter.line)) {
-					closeFile(getFile(params, name), name);
-					fileNb++;
-					if(!appendToFile(params, params.out + fileNb + '.csv', meter.line)) {
-						console.error('ERROR: Line of data larger than given Max file size');
-						process.exit(-3);
-					}
+	    	const name = fileName + fileNb + params.fileNameExt;
+			if(!appendToFile(params, name, meter.line)) {
+				closeFile(getFile(params, name), name);
+				fileNb++;
+				if(!appendToFile(params, fileName + fileNb + params.fileNameExt, meter.line)) {
+					console.error('ERROR: Line of data larger than given Max file size');
+					process.exit(-3);
 				}
-			} else { // fileName was computed in loop
-		       	appendToFile(params, fileName, meter.line);
-		    }
+			}
 		    // Write to file
 		    // 
 		}
@@ -854,9 +808,8 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 
 
 function computeTemperature(date, meteoCoefs, configMeteo, hoursSinceMid, months) {
-	if(meteoCoefs.length <= 0) {
+	if(meteoCoefs.length <= 0)
 		return ''; // if no data, return nothing
-	}
 
 	// compute meteo value
 	let min1 = 0; // current month maximum & minimum temperatures

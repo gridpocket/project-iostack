@@ -36,8 +36,8 @@ Options:
 
 		by default, if a ./config.json file exists, it will be loaded as config file. If not, all arguments needs to be specified in command.
 
-	'-maxFileSize [size]': (cannot be cumulated with separateDataBy)
-		will generate multiple files such as no generated files is bigger than the maxFileSize
+	'-maxFileSize [size]':
+		will cut generated files such as no file is generated bigger than the given maxFileSize
 
 		maxFilSize parameter is an integer followed by 'k', 'M' or 'G' (like '5G' meaning 5 GigaBytes)
 		Note that '-maxFileSize 1M' = '-maxFileSize 1024k',
@@ -45,7 +45,7 @@ Options:
 		Minimum: 1k (1 kB)
 		Maximum: 8388608G (8,388,608 GB)
 
-	'-separateDataBy [integer]': (cannot be cumulated with maxFileSize)
+	'-separateDataBy [integer]':
 		If integer is 0: (separate data by users)
 			To generate data in multiple files, as in each file there is all the data from only one meter
 			(there will be as files as meters)
@@ -53,7 +53,9 @@ Options:
 		If integer is 1 or more: (separate data by group of x dates)
 			Generate multiple files as in each file, there is data for all users timed at [integer] different dates
 
-		Without this separateDataBy or maxFileSize, all data will be generated in the same and only output file
+		Without this separateDataBy or maxFileSize, all data will be generated in the same only output file
+		With separateDataBy and maxFileSize cumulated, data will be first separated by date (or by users), 
+			and after, cut in multiple files to not be bigger than given maxFileSize
 
 	'-startID [integer]':
 		with metersNumber > startID >= 0, and startID < lastID
@@ -104,11 +106,13 @@ Options:
 		Without boolean value, equivalent to '-debug true'
 		If no option debug, equivalent to '-debug false'
 
-	'-out [.csv filepath]': (if not -separateDataBy nor -maxFileSize)
-		specify the path of the generated file
+	'-out [folder path]':
+		specify the path of the folder where generate files
 
-	'-out [folder path]': (if -separateDataBy or -maxFileSize)
-		specify the path of the folder that will contains generated files
+	'-fileNameExt [text]':
+		Specify the end and the extention of the generated files.
+
+		If no option fileNameExt, equivalent to '-fileNameExt ".csv"'
 
 	'-help' or '-h':
 		print this text instead of generating data 

@@ -23,7 +23,8 @@ The application accepts the following options:
 - -temp [boolean]
 - -meteoFile [file]
 - -location [boolean]
-- -out [.csv path]
+- -out [path]
+- -fileNameExt [text]
 - -debug [boolean]
 - -help
 
@@ -172,10 +173,9 @@ GitHub Wiki: https://github.com/gridpocket/project-iostack/wiki/Meter_gen
 # Licence
 The meter_gen application is open source, free to modify and to be used for all non-commercial and commercial purposes.
 
-Contributors : Guillaume Pilot, Filip Gluszak, César Carles, Nathaël Noguès  
-Society: GridPocket SAS, for IOStack project
-
+Created by GridPocket SAS, for IOStack project
 Email contact@gridpocket.com for more information.
 
+Contributors : Guillaume Pilot, Filip Gluszak, César Carles, Nathaël Noguès  
+Last Modified time: 2017-06-05  
 Last Modified by:   Nathaël Noguès  
-Last Modified time: 2017-05-10
