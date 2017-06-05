@@ -739,7 +739,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 		    	fileMoment = moment(params.beginDate.valueOf()+fileMoment);
 
 		    	const lastFileName = fileName;
-		    	fileName = params.out + fileMoment.format('DD-MM-YYYY') + '-'; // 'YYYY-MM-DD_HH-MM'
+		    	fileName = params.out + fileMoment.format('YYYY-MM-DD') + '-'; // 'YYYY-MM-DD_HH-MM'
 		    	if(lastFileName !== fileName)
 	    			fileNb = 1; // reset file number because of new day
 	        }
