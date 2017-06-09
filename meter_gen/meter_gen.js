@@ -10,7 +10,7 @@
  * 		GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-06-05
+ * @Last Modified time: 2017-06-09
  *
  * Usage : 
  *	  node meter_gen (options...)
@@ -21,7 +21,7 @@
  * 	node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -separateDataBy 1 -location
 **/
 
-/*jshint esversion: 6 */
+// jshint esversion: 6, boss: true
 var moment = require('moment');
 var fs = require('fs');
 var randgen = require('randgen');
@@ -37,6 +37,7 @@ var openFiles = new Map(); // {fileName1:fileDescriptor, fileName2:fileDescripto
 var curFileSize = 0;
 var fileNb = 1;
 var totalFileSize = 0;
+var totalFileCount = 0;
 
 // Get meter_gen call parameters
 const params = getParameters(process.argv.slice(2));
@@ -80,8 +81,9 @@ function getFile(params, fileName, createIfNotExists=true) {
 
 
 	// Build all folders path recursively
-	if(!buildFolder(fileName)) {
-		console.error('CRITICAL: Impossible to go to or create the folder:', e);
+	const e = buildFolder(fileName);
+	if(e) {
+		console.error('CRITICAL: Impossible to go to or create the folder.', e);
 		process.exit(-4);
 	}
 
@@ -99,21 +101,22 @@ function getFile(params, fileName, createIfNotExists=true) {
 		console.error('ERROR: Head line larger than given Max file size');
 		process.exit(-3);
 	}
+	totalFileCount++;
 	return fileDescriptor;
 }
 
 function appendToFile(params, fileName, tab) {
 	const line = tab.join(',')+'\n';
+	const bl = Buffer.byteLength(line, 'utf8');
 
 	const fd = getFile(params, fileName);
-
 	if(params.maxFileSize) {
-		curFileSize += Buffer.byteLength(line, 'utf8');
+		curFileSize += bl;
 		if(curFileSize >= params.maxFileSize)
 			return false;
 	}
 	fs.appendFileSync(fd, line, 'utf-8');
-	totalFileSize += Buffer.byteLength(line, 'utf8');
+	totalFileSize += bl;
 	return true;
 }
 
@@ -206,26 +209,26 @@ function chooseBetween(tab) {
     return null;
 }
 
+function buildFolderReduce(path, folder) {
+  	path += folder + '/';
+  	if (!fs.existsSync(path))
+  		fs.mkdirSync(path);
 
+  	return path;
+}
 function buildFolder(folderPath) {
 	try {
 		// Build all folders path recursively
 		(folderPath+'a').split('/').slice(0,-1)
-		  .reduce((path, folder) => {
-		  	path += folder + '/';
-		  	if (!fs.existsSync(path)) {
-		  		fs.mkdirSync(path);
-		  	}
-		  	return path;
-		  }, '');
+		  .reduce(buildFolderReduce, '');
 	} catch (e) {
-		return false;
+		return e;
 	}
-	return true;
+	return null;
 }
 
 function distance(ax,ay,bx,by) {
-	return (ax-bx)*(ax-bx)+(ay-by)*(ay-by);
+	return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by)); // √((x1-x2)²+(y1-y2)²) 
 }
 // Util functions
 // 
@@ -242,27 +245,24 @@ function getParameters(args) {
 	// Converting args to a map
 	const map = new Map();
 
-	while(args.length > 0) {
-		let arg = args.shift();
-
-		// remove '-' at begining of option name
+	// reading all arguments one by one
+	let arg;
+	while(arg = args.shift()) {
 		if(arg.startsWith('-')) {
+			// remove '-' at begining of option name
 			arg = arg.slice(1);
 
 			// get option arguments, and pushing into map
-			if(args.length < 1 || args[0].startsWith('-')) {
-				map.set(arg, '');
-			} else {
-				map.set(arg, args.shift());
-			}
+			map.set(arg, (args.length < 1 || args[0].startsWith('-')) ? '' : args.shift());
 		} else {
+			// argument wasn't starting with '-', certainly an error. Push it to map, will print error for this argument
 			map.set(arg, '');
 		}
 	}
 
-	if(!map.has('config') && fs.existsSync('./config.json')) { // default config file
+	// If no config file specified, and there is a ./config.json, use it as default config file
+	if(!map.has('config') && fs.existsSync('./config.json'))
 		map.set('config', './config.json');
-	}
 
 	// loading arguments
 	let errNb = 0;
@@ -444,18 +444,12 @@ function getParameters(args) {
 	if(params.out === null) {
 		params.out = './';
 	} else if (params.out === '') {
-		console.error('ERROR: out need an argument ('+((params.maxFileSize !== null || params.separateDataBy !== null)?'folder path':'csv file path'));
+		console.error('ERROR: out need an argument (folder path, finishing like "./folder/")');
 		errNb++;
 	} else {
 		// Check filePath, add ends '/' if not already
 		if(!params.out.endsWith('/'))
 			params.out += '/';
-
-		// Build all folders path recursively
-		if(!buildFolder(params.out)) {
-			console.error('ERROR: Impossible to go to or create the folder:', e);
-			errNb++;
-		}
 	}
 
 	// File Name Extension
@@ -532,8 +526,7 @@ function getLocations(locationsFileName, totalPop) {
 
 	// compute sum_pop
 	let curr_loc;
-	while(locationsFile.length > 0) {
-		curr_loc = locationsFile.shift();
+	while(curr_loc = locationsFile.shift()) {
 		if(curr_loc.population<1)
 			continue; // not enough population in this city, not taken into acount
 
@@ -723,6 +716,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 
 		if(minutesSinceMid >= 24*60) { // next day 
 			for(let i=metersTab.length-1; i>=0; i--) {
+				// restet highcost and lowcosts
 				metersTab[i].highcost = 0;
 		        metersTab[i].lowcost = 0;
 			}
@@ -796,7 +790,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 				closeFile(getFile(params, name), name);
 				fileNb++;
 				if(!appendToFile(params, fileName + fileNb + params.fileNameExt, meter.line)) {
-					console.error('ERROR: Line of data larger than given Max file size');
+					console.error('ERROR: Line of data larger than given Max file size.');
 					process.exit(-3);
 				}
 			}
@@ -853,12 +847,13 @@ function computeTemperature(date, meteoCoefs, configMeteo, hoursSinceMid, months
 
 function printProgress(progress, max) {
 	const memu = process.memoryUsage().heapUsed;
-	process.stdout.write('progress: '+progress+' /'+max+' ('+((100*progress/max)|0)+'%), memory: '+ prettifyNumber(memu) +', generated: '+ prettifyNumber(totalFileSize) +'        \r');
+	process.stdout.write('progress: '+progress+' /'+max+' ('+((100*progress/max)|0)+'%), memory: '+prettifyNumber(memu)+
+		', generated: '+prettifyNumber(totalFileSize)+' ('+totalFileCount+' files)        \r');
 }
 
 function prettifyNumber(number) {
-	return 	((number/(1024*1024*1024)|0) > 0? (number/(1024*1024*1024)).toFixed(2)+'G': // with 2 decimals for Giga bytes
-			(number>>20) > 0? (number>>20)+'M':
-			(number>>10) > 0? (number>>10)+'k':
+	return 	((number/(1024*1024*1024)|0)? (number/(1024*1024*1024)).toFixed(2)+'G': // with 2 decimals for Giga bytes
+			(number>>20)? (number>>20)+'M':
+			(number>>10)? (number>>10)+'k':
 			number)+'B';
 }
