@@ -33,6 +33,9 @@ console.time('init');
 // Save file descriptors to faster use
 var openFiles = new Map(); // {fileName1:fileDescriptor, fileName2:fileDescriptor...}
 
+// Variables to avoid debug print spam
+let lastPrintedProgress = Date.now()|0;
+
 // Variables to monitor file size
 var curFileSize = 0;
 var fileNb = 1;
@@ -584,6 +587,10 @@ function generateMeters(params, climatZone, configMeteo) {
 	// Compute these meters (between startID and lastID)
 	let lastCity = null;
 	let city = locations.shift(); // city: {country,region,city,lattitude,longitude,radius,pop}
+	let progress = 0;
+	const progressMax = (params.lastID - params.startID); // compute number of loops needed
+	if(params.debug) printProgress('meters', 0, progressMax);
+
 	for(; curr_id < params.lastID; curr_id++) {
 		const meter = {};
 
@@ -667,8 +674,11 @@ function generateMeters(params, climatZone, configMeteo) {
 		// If this is the last person on this city, following loop will use next location
 		if((--city.pop)<=0 && locations.length > 0)
 			city = locations.shift(); // next turn on the next city
+
+		if(params.debug) printProgress('meters', ++progress, progressMax);
 	}
 
+	if(params.debug) console.log(); // jump over one line
 	return metersTab;
 }
 
@@ -682,7 +692,19 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 
 	let progress = 0;
 	const progressMax = 1+ (params.endDate.valueOf() - params.beginDate.valueOf())/1000 /60 /params.interval; // compute number of loops needed
-	if(params.debug) printProgress(progress, progressMax);
+	if(params.debug) printProgress('data', 0, progressMax);
+
+	const getNewFileName = function(d) {
+		const df = d.format('YYYY YY MM DD HH mm').split(' ');
+		return params.out
+			.replace('%Y', df[0])
+			.replace('%y', df[1])
+			.replace('%M', df[2])
+			.replace('%D', df[3])
+			.replace('%h', df[4])
+			.replace('%m', df[5]);
+	};
+
 
 	for(let d=moment(params.beginDate); d<=params.endDate; d.add(params.interval, 'minutes')) { // For each period of time
 		minutesSinceMid += params.interval;
@@ -720,16 +742,11 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 
 		{ // using template to build fileName
 			const lastFileName = fileName;
-			fileName = params.out
-				.replace('%y', d.format('YY'))
-				.replace('%Y', d.format('YYYY'))
-				.replace('%M', d.format('MM'))
-				.replace('%D', d.format('DD'))
-				.replace('%h', d.format('HH'))
-				.replace('%m', d.format('mm'));
+			fileName = getNewFileName(d);
 			if(lastFileName !== fileName)
 				fileNb = 1; // reset file number because of new day
 		}
+		formatedDate = d.format();
 
 		for(let i=metersTab.length-1; i>=0; i--) { // For each meter
 			const meter = metersTab[i];
@@ -741,16 +758,16 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 
 			const avg = subConfig[season][dayOfWeek][dayTime].avg * configClimat.climats[meter.climat][season].RatioAvg;
 			const stdev = subConfig[season][dayOfWeek][dayTime].stddev * configClimat.climats[meter.climat][season].RatioStddev;
-			const curr_conso = randgen.rnorm(avg, stdev) / (1440 / params.interval);
+			const curr_conso = ((randgen.rnorm(avg, stdev) / (14.4 / params.interval)) |0)/100; // 14.4 <= 1440 / 100 (1440=nb minutes per day, 100=2digits rounding)
 
 			//
 			// Update Line
 			meter.line[1] += curr_conso; // conso
 			meter.line[(hoursSinceMid>=7 && hoursSinceMid<22)?3:2] += curr_conso*0.001; // (if in [7h - 21h] so highcost then lowcost), convert to KWh
-			meter.line[0] = d.format();
+			meter.line[0] = formatedDate;
 
 			if(params.temp)
-				meter.line[7] = computeTemperature(d, meter.meteoCoefs, configMeteo, hoursSinceMid, month);
+				meter.line[7] = computeTemperature(d, meter.meteoCoefs, configMeteo, hoursSinceMid, month).toFixed(2);
 			// Update Line
 			//
 
@@ -770,7 +787,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 		}
 
 		if(global.gc) gc();
-		if(params.debug) printProgress(++progress, progressMax);
+		if(params.debug) printProgress('data', ++progress, progressMax);
 	}
 
 	if(params.debug) console.log(); // jump over one line
@@ -809,17 +826,23 @@ function computeTemperature(date, meteoCoefs, configMeteo, hoursSinceMid, months
 	// interpol day data (as minimum temperature is at 4AM, and maximum temperature at 4PM) and return
 	if(hoursSinceMid >= 4 && hoursSinceMid <= 16) { // day (temp increasing)
 				// [4,16] -> [0,1]		-> [min,max]
-		return ((hoursSinceMid-4)/12 * (max1-min1) +min1).toFixed(2);
+		return ((hoursSinceMid-4)/12 * (max1-min1) +min1);
 	} else { // night (temp reducing)
 				// [0,4]u[16,24] -> [0,1]	   -> [min,max]
-		return ( (1-((hoursSinceMid+8)%24)/12) *(max1-min1) +min1 ).toFixed(2);
+		return ( (1-((hoursSinceMid+8)%24)/12) *(max1-min1) +min1 );
 	}
 }
 
-function printProgress(progress, max) {
-	const memu = process.memoryUsage().heapUsed;
-	process.stdout.write('progress: '+progress+' /'+max+' ('+((100*progress/max)|0)+'%), memory: '+prettifyNumber(memu)+
-		', generated: '+prettifyNumber(totalFileSize)+' ('+totalFileCount+' files)              \r');
+function printProgress(name, progress, max) {
+	// print 5 times per second maximum (once each 200ms)
+	const now = Date.now();
+	if(now - lastPrintedProgress > 200 || progress === 0 || progress === max) { // force print when 0% and 100%
+		const memu = process.memoryUsage().heapUsed;
+		process.stdout.write(name+': '+
+			progress+' /'+max+' ('+((100*progress/max)|0)+'%), memory: '+prettifyNumber(memu)+
+			(totalFileSize > 0 ? ', generated: '+prettifyNumber(totalFileSize) + ' ('+totalFileCount+' file(s))':'')+'              \r');
+		lastPrintedProgress = now;
+	}
 }
 
 function prettifyNumber(number) {
