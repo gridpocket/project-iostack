@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 
 /**
- * 		Meter csv data generator
- * 
+ *		 Meter csv data generator
+ *
  * GridPocket Copyrights 2016
  * IOSTACK project www.iostack.eu
- * 
- * @Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES, Nathaël NOGUÈS 
- * 		GridPocket SAS
+ *
+ * @Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES, Nathaël NOGUÈS
+ *		 GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
  * @Last Modified time: 2017-06-09
  *
- * Usage : 
+ * Usage :
  *	  node meter_gen (options...)
  *	 or
  *	  node --expose-gc meter_gen (options...)
  *
- * Example usage: 
- * 	node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -separateDataBy 1 -location
+ * Example usage:
+ *	 node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -separateDataBy 1 -location
 **/
 
 // jshint esversion: 6, boss: true
@@ -63,10 +63,10 @@ if(params.debug) console.timeEnd('total');
 
 process.exit(0);
 //  //  //  //  // Execution End //  //  //  //  //
-//      //      //               //      //      //
+//	  //	  //			   //	  //	  //
 
 
-//      //      //           //      //      //
+//	  //	  //		   //	  //	  //
 //  //  //  //  // Functions //  //  //  //  //
 
 
@@ -138,8 +138,6 @@ function loadArgs(map, recursive=[]) {
 		interval: null,
 		metersType: null,
 		maxFileSize: null,
-		separateDataBy: null,
-		fileNameExt: null,
 		startID: null,
 		lastID: null,
 		temp: null,
@@ -167,7 +165,7 @@ function loadArgs(map, recursive=[]) {
 			// convert config to Map object (speed up)
 			const paramsMap = new Map();
 			Object.keys(config).forEach(key => {
-			    paramsMap.set(key, config[key]);
+				paramsMap.set(key, config[key]);
 			});
 
 			// Add this file name to 'recursive' list, to maybe later detect recursivity loop
@@ -178,27 +176,27 @@ function loadArgs(map, recursive=[]) {
 
 	// Loading all others arguments
 	Object.keys(params).forEach(key => {
-        if(map.has(key))
-        	params[key] = map.get(key);
-    });
-    map.forEach((value, key) => {
-    	if(params.hasOwnProperty(key))
-        	params[key] = value;
-        else if(key !== 'config') {
-        	console.error('ERROR: Unrecognised option "'+key+'"');
-        	hasErrors = true;
-        }
-    });
+		if(map.has(key))
+			params[key] = map.get(key);
+	});
+	map.forEach((value, key) => {
+		if(params.hasOwnProperty(key))
+			params[key] = value;
+		else if(key !== 'config') {
+			console.error('ERROR: Unrecognised option "'+key+'"');
+			hasErrors = true;
+		}
+	});
 
-    return [params, hasErrors]; 
+	return [params, hasErrors];
 }
 
-/** 
- * return one of the values of the table passed in parameter, randomly choosen 
+/**
+ * return one of the values of the table passed in parameter, randomly choosen
 **/
 function chooseBetween(tab) {
 	let rand = Math.random();
-	
+
 	const keys = Object.keys(tab);
 	for(let i=keys.length-1; i>=0; i--) {
 		rand -= tab[keys[i]];
@@ -206,15 +204,15 @@ function chooseBetween(tab) {
 			return keys[i];
 	}
 
-    return null;
+	return null;
 }
 
 function buildFolderReduce(path, folder) {
-  	path += folder + '/';
-  	if (!fs.existsSync(path))
-  		fs.mkdirSync(path);
+	  path += folder + '/';
+	  if (!fs.existsSync(path))
+		  fs.mkdirSync(path);
 
-  	return path;
+	  return path;
 }
 function buildFolder(folderPath) {
 	try {
@@ -228,14 +226,14 @@ function buildFolder(folderPath) {
 }
 
 function distance(ax,ay,bx,by) {
-	return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by)); // √((x1-x2)²+(y1-y2)²) 
+	return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by)); // √((x1-x2)²+(y1-y2)²)
 }
 // Util functions
-// 
+//
 
 //
 // Preparing parser functions
-function getParameters(args) {	
+function getParameters(args) {
 	if(args.indexOf('-h') >= 0 || args.indexOf('-help') >= 0) {
 		const usageMessage = fs.readFileSync(__dirname+'/usageMessage.txt', 'utf8');
 		console.log(usageMessage);
@@ -287,12 +285,12 @@ function getParameters(args) {
 	} else {
 		const nb_meters = params.metersNumber|0;
 		if(nb_meters <= 0) {
-	    	console.error('ERROR: Number of meters should be more than 0 (was "'+params.metersNumber+'")');
-	    	errNb++;
+			console.error('ERROR: Number of meters should be more than 0 (was "'+params.metersNumber+'")');
+			errNb++;
 			params.metersNumber = null;
-	    } else {
-	    	params.metersNumber = nb_meters;
-	    }
+		} else {
+			params.metersNumber = nb_meters;
+		}
 	}
 
 	// Date
@@ -300,11 +298,11 @@ function getParameters(args) {
 		console.error('ERROR: beginDate and endDate need to be specified');
 		errNb++;
 	} else if(params.beginDate === '' || params.endDate === '') {
-		console.error('ERROR: beginDate and endDate need an argument each');  
+		console.error('ERROR: beginDate and endDate need an argument each');
 		errNb++;
 	} else if(!moment(params.beginDate, 'YYYY/MM/DD', true).isValid() || !moment(params.endDate, 'YYYY/MM/DD', true).isValid()) {
-	    console.error('ERROR: Check your beginDate and endDate, should be in format yyyy/mm/dd (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
-	    errNb++;
+		console.error('ERROR: Check your beginDate and endDate, should be in format yyyy/mm/dd (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
+		errNb++;
 	} else {
 		const beginDate = moment(params.beginDate, 'YYYY/MM/DD');
 		const endDate = moment(params.endDate, 'YYYY/MM/DD');
@@ -325,11 +323,11 @@ function getParameters(args) {
 	} else {
 		const interval = params.interval|0;
 		if(interval <= 0 || interval > 999999) {
-	    	console.error('ERROR: interval should be 1 at minimum (was "'+params.interval+'")');
-	    	errNb++;
-	    } else {
-	    	params.interval = interval;
-	    }
+			console.error('ERROR: interval should be 1 at minimum (was "'+params.interval+'")');
+			errNb++;
+		} else {
+			params.interval = interval;
+		}
 	}
 
 	// Max File Size
@@ -355,22 +353,6 @@ function getParameters(args) {
 					errNb++;
 			}
 			params.maxFileSize = maxFileSize;
-		}
-	}
-
-	// Separate Files
-	if(params.separateDataBy === null || params.separateDataBy === false || params.separateDataBy === 'false') {
-		params.separateDataBy = null;
-	} else if(params.separateDataBy === '') {
-		console.error('ERROR: separateDataBy need an argument (put false to disable a config setting)');
-		errNb++;
-	} else {
-		let separateDataBy = params.separateDataBy |0;
-		if(separateDataBy<0) {
-			console.error('ERROR: separateDataBy need a positive integer as argument (was "'+params.separateDataBy+'")');
-			errNb++;
-		} else {
-			params.separateDataBy = separateDataBy;
 		}
 	}
 
@@ -414,8 +396,8 @@ function getParameters(args) {
 	} else if(params.metersType.startsWith('elec')) {
 		params.metersType = 'elec';
 	} else if(params.metersType !== 'gas') {
-	    console.error("ERROR: metersType should be 'elec', 'gas' or 'mixed' (was \""+params.metersType+'")');
-	    errNb++;
+		console.error("ERROR: metersType should be 'elec', 'gas' or 'mixed' (was \""+params.metersType+'")');
+		errNb++;
 	}
 
 	// Temperature
@@ -442,25 +424,16 @@ function getParameters(args) {
 
 	// Out file
 	if(params.out === null) {
-		params.out = './';
+		params.out = './%Y-%M-%D_%N.csv';
 	} else if (params.out === '') {
-		console.error('ERROR: out need an argument (folder path, finishing like "./folder/")');
+		console.error('ERROR: out need an argument (templatable file path (with arguments %Y %y %M %D %h %m %N) like "./%Y-%M-%D/%h-%m.csv")');
 		errNb++;
-	} else {
-		// Check filePath, add ends '/' if not already
-		if(!params.out.endsWith('/'))
-			params.out += '/';
-	}
-
-	// File Name Extension
-	if(params.fileNameExt === null) {
-		params.fileNameExt = '.csv';
-	} else {	
-		params.fileNameExt += '.csv';
-	}
-
-	if(!params.fileNameExt.startsWith('.'))
-		params.fileNameExt = '-' + params.fileNameExt; // add separator if starts with something else than a dot
+	} else if (params.maxFileSize && params.out.indexOf('%N')<0) {
+		console.error('ERROR: with maxFileSize, out path need to contains "%N" (that will be replaced by file number during execution)');
+		errNb++;
+	} else if(params.out.endsWith('/')) {
+		params.out += '%Y-%M-%D_%N.csv';
+	} // else: keep as it is
 
 	if(!params.climatFile) {
 		console.error('ERROR: climatFile need to be specified');
@@ -519,7 +492,7 @@ function getMeteoConfig(meteoFileName) {
 }
 
 function getLocations(locationsFileName, totalPop) {
-	let locationsFile = JSON.parse(fs.readFileSync(locationsFileName)); 
+	let locationsFile = JSON.parse(fs.readFileSync(locationsFileName));
 	let sum_pop = 0;
 
 	const locations = [];
@@ -540,7 +513,7 @@ function getLocations(locationsFileName, totalPop) {
 
 			// pop:343304 dens:4773 => radius of 4.78485496485km
 			// density <1 => 1  to avoid errors (dividing 0 or negative values)
-			radius: Math.sqrt(curr_loc.population / (Math.PI* ((curr_loc.density<1?1:curr_loc.density)+121.519) )), //121.519 is average france density, used as constant ratio to reduce size of smallest cities 
+			radius: Math.sqrt(curr_loc.population / (Math.PI* ((curr_loc.density<1?1:curr_loc.density)+121.519) )), //121.519 is average france density, used as constant ratio to reduce size of smallest cities
 			pop: curr_loc.population
 		});
 	}
@@ -612,84 +585,84 @@ function generateMeters(params, climatZone, configMeteo) {
 	let lastCity = null;
 	let city = locations.shift(); // city: {country,region,city,lattitude,longitude,radius,pop}
 	for(; curr_id < params.lastID; curr_id++) {
-	    const meter = {};
+		const meter = {};
 
-	    // region climat
-	    meter.climat = climatZone.FRA[String(city.region)];
-	    if(!meter.climat) {
-		    console.error('ERROR: Region', city.region, 'not referenced in climat file');
-	    	process.exit(-1);
-	    }
+		// region climat
+		meter.climat = climatZone.FRA[String(city.region)];
+		if(!meter.climat) {
+			console.error('ERROR: Region', city.region, 'not referenced in climat file');
+			process.exit(-1);
+		}
 
 		meter.line = [
 			null, // date time (will be set later)
 			0, // conso
-	        0, // highcost
-	        0, // lowcost
-	        (params.metersType === 'mix')?chooseBetween(consoTypeChances):params.metersType, // consumption type
-	        'METER' + ('00000' + curr_id).slice(-6), // Meter ID
-	       	chooseBetween(houseSurfaceChances) // home surface
-	    ];
-	    if(params.temp || params.location) {
-	    	// ÷2 (stddev should be radius/2)
-	    	const lat =  randgen.rnorm(city.lat, city.radius*0.0045066473); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
-	        const lng = randgen.rnorm(city.lng, city.radius*0.00449157829); // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
+			0, // highcost
+			0, // lowcost
+			(params.metersType === 'mix')?chooseBetween(consoTypeChances):params.metersType, // consumption type
+			'METER' + ('00000' + curr_id).slice(-6), // Meter ID
+			   chooseBetween(houseSurfaceChances) // home surface
+		];
+		if(params.temp || params.location) {
+			// ÷2 (stddev should be radius/2)
+			const lat =  randgen.rnorm(city.lat, city.radius*0.0045066473); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
+			const lng = randgen.rnorm(city.lng, city.radius*0.00449157829); // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
 
-		    if(params.temp) {
-		    	let thisConfMeteo;
+			if(params.temp) {
+				let thisConfMeteo;
 
-			    // If changed city, and cityMeteoCenters not already = Array.from(configMeteo.values());
-		    	if(lastCity !== city && !(lastCity !== null && lastCity.pop < 2 && city.pop < 2)) {
-			    	if(city.pop < 2) {
-			    		cityMeteoCenters = Array.from(configMeteo.keys());
-			    	} else { // compute city's nearest meteo centers (only for cities of 2 or more meters)
-			    		cityMeteoCenters = [];
+				// If changed city, and cityMeteoCenters not already = Array.from(configMeteo.values());
+				if(lastCity !== city && !(lastCity !== null && lastCity.pop < 2 && city.pop < 2)) {
+					if(city.pop < 2) {
+						cityMeteoCenters = Array.from(configMeteo.keys());
+					} else { // compute city's nearest meteo centers (only for cities of 2 or more meters)
+						cityMeteoCenters = [];
 
-				    	// find nearest meteo data in all France meteo centers
-				    	for(let [key,thisConfMeteo] of configMeteo) {
-			    			if(distance(city.lat, city.lng, thisConfMeteo.lat, thisConfMeteo.lng) < 1) // ignore far data (data from more than 1°Lat/lng distance)
-			    				cityMeteoCenters.push(key);
-				    	}
-			    	}
-		    	}
+						// find nearest meteo data in all France meteo centers
+						for(let [key,thisConfMeteo] of configMeteo) {
+							if(distance(city.lat, city.lng, thisConfMeteo.lat, thisConfMeteo.lng) < 1) // ignore far data (data from more than 1°Lat/lng distance)
+								cityMeteoCenters.push(key);
+						}
+					}
+				}
 
-		    	if(cityMeteoCenters.length <= 0) {
-		    		console.log('WARNING: No meteoCenter around', city.name+', lat:', city.lat+', lng:', city.lng);
+				if(cityMeteoCenters.length <= 0) {
+					console.log('WARNING: No meteoCenter around', city.name+', lat:', city.lat+', lng:', city.lng);
 					meter.meteoCoefs = [];
-		    	} else {
-			    	const meteoCoefs = [];
-			    	// find meter's nearest meteo centers
-			    	for(let i=cityMeteoCenters.length-1; i>=0; i--) {
-			    		thisConfMeteo = configMeteo.get(cityMeteoCenters[i]);
-		    			meteoCoefs.push({id:thisConfMeteo.id, coef:1/(distance(lat, lng, thisConfMeteo.lat, thisConfMeteo.lng)+0.001)});
-			    	}
+				} else {
+					const meteoCoefs = [];
+					// find meter's nearest meteo centers
+					for(let i=cityMeteoCenters.length-1; i>=0; i--) {
+						thisConfMeteo = configMeteo.get(cityMeteoCenters[i]);
+						meteoCoefs.push({id:thisConfMeteo.id, coef:1/(distance(lat, lng, thisConfMeteo.lat, thisConfMeteo.lng)+0.001)});
+					}
 
-			    	meteoCoefs.sort(sortByCoef).splice(5); // Keep only 5 nearest meteo coefs
+					meteoCoefs.sort(sortByCoef).splice(5); // Keep only 5 nearest meteo coefs
 
-			    	// compute total of coefs (to reduce-it to 1)
-			    	let totalCoefs = 0;
-			    	for(let i=meteoCoefs.length-1; i>=0; i--)
-			    		totalCoefs += meteoCoefs[i].coef;
+					// compute total of coefs (to reduce-it to 1)
+					let totalCoefs = 0;
+					for(let i=meteoCoefs.length-1; i>=0; i--)
+						totalCoefs += meteoCoefs[i].coef;
 
-			    	// compute meteo coefs for the meter
-			    	for(let i=meteoCoefs.length-1; i>=0; i--)
-			    		meteoCoefs[i].coef /= totalCoefs;
+					// compute meteo coefs for the meter
+					for(let i=meteoCoefs.length-1; i>=0; i--)
+						meteoCoefs[i].coef /= totalCoefs;
 					meter.meteoCoefs = meteoCoefs;
-		    	}
+				}
 
-		        meter.line.push(''); // temperature, will be set later
-		    }
+				meter.line.push(''); // temperature, will be set later
+			}
 
-		    if(params.location) {
-		        meter.line.push(city.name);
-		        meter.line.push(city.region);
-		        meter.line.push(lat.toFixed(6));
-		        meter.line.push(lng.toFixed(6));
-		    }
-	    }
+			if(params.location) {
+				meter.line.push(city.name);
+				meter.line.push(city.region);
+				meter.line.push(lat.toFixed(6));
+				meter.line.push(lng.toFixed(6));
+			}
+		}
 
-	    // Add data to files for this meter
-	    metersTab.push(meter);
+		// Add data to files for this meter
+		metersTab.push(meter);
 
 		// If this is the last person on this city, following loop will use next location
 		if((--city.pop)<=0 && locations.length > 0)
@@ -705,7 +678,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	let month;
 	let season;
 	let dayOfWeek;
-	let fileName = params.out + params.beginDate.format('YYYY-MM-DD') + '/';
+	let fileName;
 
 	let progress = 0;
 	const progressMax = 1+ (params.endDate.valueOf() - params.beginDate.valueOf())/1000 /60 /params.interval; // compute number of loops needed
@@ -714,88 +687,86 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	for(let d=moment(params.beginDate); d<=params.endDate; d.add(params.interval, 'minutes')) { // For each period of time
 		minutesSinceMid += params.interval;
 
-		if(minutesSinceMid >= 24*60) { // next day 
+		if(minutesSinceMid >= 24*60) { // next day
 			for(let i=metersTab.length-1; i>=0; i--) {
 				// restet highcost and lowcosts
 				metersTab[i].highcost = 0;
-		        metersTab[i].lowcost = 0;
+				metersTab[i].lowcost = 0;
 			}
 
 			// month since begining of the year, with decimals
 			month = d.diff(d.clone().startOf('year'), 'month', true);
-	        // Hot season (April 1st -> October 31th)
-	        season = (month>=4 && month<11) ? 'hotS' : 'coldS';
+			// Hot season (April 1st -> October 31th)
+			season = (month>=4 && month<11) ? 'hotS' : 'coldS';
 
-	        // Working day (MTWTF)
-	    	const dateDay = d.format('ddd');
-	        dayOfWeek = (dateDay!=='Sat' && dateDay!=='Sun') ? 'wDay' : 'wEnd';
+			// Working day (MTWTF)
+			const dateDay = d.format('ddd');
+			dayOfWeek = (dateDay!=='Sat' && dateDay!=='Sun') ? 'wDay' : 'wEnd';
 
-	        minutesSinceMid = d.diff(d.clone().startOf('day'), 'minutes');
-
-	        if(params.separateDataBy) {
-		        let fileMoment = d.valueOf() - params.beginDate.valueOf(); // dateTo have the first file number equivalent dateTo the dateFrom
-		    	fileMoment /= 60000*params.interval*params.separateDataBy; // divide by wanted interval numbers
-		    	fileMoment |= 0; // parseInt dateTo get the interval number
-		    	fileMoment *= 60000*params.interval*params.separateDataBy; // find the date corresponding dateTo the file number
-		    	fileMoment = moment(params.beginDate.valueOf()+fileMoment);
-
-		    	const lastFileName = fileName;
-		    	fileName = params.out + fileMoment.format('YYYY-MM-DD') + '/'; // 'YYYY-MM-DD_HH-MM'
-		    	if(lastFileName !== fileName)
-	    			fileNb = 1; // reset file number because of new day
-	        }
+			minutesSinceMid = d.diff(d.clone().startOf('day'), 'minutes');
 		}
 		const hoursSinceMid = minutesSinceMid/60;
 
-	    let dayTime = 'Evening';
-	    if(hoursSinceMid <= 6)
-	        dayTime = 'Night'; // Night (00h -> 06H)
-	    else if(hoursSinceMid <=  9)
-	        dayTime = 'Morning';  // Morning (06h -> 09h)
-	    else if(hoursSinceMid <=  17)
-	        dayTime = 'Day'; // Day (09h -> 17h)
-	    /*else
-	        dayTime = 'Evening';  // Evening(17h -> 23h59)
-	    */
+		let dayTime = 'Evening';
+		if(hoursSinceMid <= 6)
+			dayTime = 'Night'; // Night (00h -> 06H)
+		else if(hoursSinceMid <=  9)
+			dayTime = 'Morning';  // Morning (06h -> 09h)
+		else if(hoursSinceMid <=  17)
+			dayTime = 'Day'; // Day (09h -> 17h)
+		/*else
+			dayTime = 'Evening';  // Evening(17h -> 23h59)
+		*/
+
+		{ // using template to build fileName
+			const lastFileName = fileName;
+			fileName = params.out
+				.replace('%y', d.format('YY'))
+				.replace('%Y', d.format('YYYY'))
+				.replace('%M', d.format('MM'))
+				.replace('%D', d.format('DD'))
+				.replace('%h', d.format('HH'))
+				.replace('%m', d.format('mm'));
+			if(lastFileName !== fileName)
+				fileNb = 1; // reset file number because of new day
+		}
 
 		for(let i=metersTab.length-1; i>=0; i--) { // For each meter
 			const meter = metersTab[i];
-			if(params.separateDataBy !== null && params.separateDataBy ===0)
-				fileName = params.out + meter.line[5] + '-';
 
- 			// DataConsumption[energyType][surface]
+			// DataConsumption[energyType][surface]
 			//  energyType = meter.consumptionType==='elec'?'elec':'gas';
 			//  surface = 's'+meter.houseType;
 			const subConfig = configConsum[meter.line[4]]['s'+meter.line[6]];
 
-		    const avg = subConfig[season][dayOfWeek][dayTime].avg * configClimat.climats[meter.climat][season].RatioAvg;
-		    const stdev = subConfig[season][dayOfWeek][dayTime].stddev * configClimat.climats[meter.climat][season].RatioStddev;
-		    const curr_conso = randgen.rnorm(avg, stdev) / (1440 / params.interval);
+			const avg = subConfig[season][dayOfWeek][dayTime].avg * configClimat.climats[meter.climat][season].RatioAvg;
+			const stdev = subConfig[season][dayOfWeek][dayTime].stddev * configClimat.climats[meter.climat][season].RatioStddev;
+			const curr_conso = randgen.rnorm(avg, stdev) / (1440 / params.interval);
 
-		    //
-		    // Update Line
-		    meter.line[1] += curr_conso; // conso
-		    meter.line[(hoursSinceMid>=7 && hoursSinceMid<22)?3:2] += curr_conso*0.001; // (if in [7h - 21h] so highcost then lowcost), convert to KWh
-		    meter.line[0] = d.format();
+			//
+			// Update Line
+			meter.line[1] += curr_conso; // conso
+			meter.line[(hoursSinceMid>=7 && hoursSinceMid<22)?3:2] += curr_conso*0.001; // (if in [7h - 21h] so highcost then lowcost), convert to KWh
+			meter.line[0] = d.format();
 
-		    if(params.temp)
-		    	meter.line[7] = computeTemperature(d, meter.meteoCoefs, configMeteo, hoursSinceMid, month);
-		    // Update Line
-		    //
+			if(params.temp)
+				meter.line[7] = computeTemperature(d, meter.meteoCoefs, configMeteo, hoursSinceMid, month);
+			// Update Line
+			//
 
-		    //
-		    // Write line to file
-	    	const name = fileName + fileNb + params.fileNameExt;
+			//
+			// Write line to file
+			const name = fileName.replace('%N', fileNb);
 			if(!appendToFile(params, name, meter.line)) {
 				closeFile(getFile(params, name), name);
 				fileNb++;
-				if(!appendToFile(params, fileName + fileNb + params.fileNameExt, meter.line)) {
+				if(!appendToFile(params, fileName.replace('%N', fileNb), meter.line)) {
 					console.error('ERROR: Line of data larger than given Max file size.');
 					process.exit(-3);
 				}
 			}
-		    // Write to file
-		    // 
+			// Write to file
+			//
 		}
 
 		if(global.gc) gc();
@@ -848,12 +819,12 @@ function computeTemperature(date, meteoCoefs, configMeteo, hoursSinceMid, months
 function printProgress(progress, max) {
 	const memu = process.memoryUsage().heapUsed;
 	process.stdout.write('progress: '+progress+' /'+max+' ('+((100*progress/max)|0)+'%), memory: '+prettifyNumber(memu)+
-		', generated: '+prettifyNumber(totalFileSize)+' ('+totalFileCount+' files)        \r');
+		', generated: '+prettifyNumber(totalFileSize)+' ('+totalFileCount+' files)              \r');
 }
 
 function prettifyNumber(number) {
-	return 	((number/(1024*1024*1024)|0)? (number/(1024*1024*1024)).toFixed(2)+'G': // with 2 decimals for Giga bytes
-			(number>>20)? (number>>20)+'M':
-			(number>>10)? (number>>10)+'k':
+	return ((number/(1024*1024*1024)|0)? (number/(1024*1024*1024)).toFixed(2)+'G': // with 2 decimals for Giga bytes
+		   (number>>20)? (number>>20)+'M':
+		   (number>>10)? (number>>10)+'k':
 			number)+'B';
 }

@@ -45,18 +45,6 @@ Options:
 		Minimum: 1k (1 kB)
 		Maximum: 8388608G (8,388,608 GB)
 
-	'-separateDataBy [integer]':
-		If integer is 0: (separate data by users)
-			To generate data in multiple files, as in each file there is all the data from only one meter
-			(there will be as files as meters)
-
-		If integer is 1 or more: (separate data by group of x dates)
-			Generate multiple files as in each file, there is data for all users timed at [integer] different dates
-
-		Without this separateDataBy or maxFileSize, all data will be generated in the same only output file
-		With separateDataBy and maxFileSize cumulated, data will be first separated by date (or by users), 
-			and after, cut in multiple files to not be bigger than given maxFileSize
-
 	'-startID [integer]':
 		with metersNumber > startID >= 0, and startID < lastID
 		Meters ID will start from the specified ID
@@ -106,13 +94,23 @@ Options:
 		Without boolean value, equivalent to '-debug true'
 		If no option debug, equivalent to '-debug false'
 
-	'-out [folder path]':
-		specify the path of the folder where generate files
+	'-out [file path template]':
+		specify the generated files names.
 
-	'-fileNameExt [text]':
-		Specify the end and the extention of the generated files.
+		You can use the following templates in the file name to change depending on the data:
+			- '%Y': Generation year (format YYYY like 2017)
+			- '%y': Generation year (format YY like 17)
+			- '%M': Generation month (format MM like 01 for January to 12 for December)
+			- '%D': Generation day of month (format DD like 01 to 31)
+			- '%h': Generation hour (format HH like 00 to 23)
+			- '%m': Generation minute (format mm like 00 to 59)
+			- '%N': File Number (needed when using maxFileSize option)
 
-		If no option fileNameExt, equivalent to '-fileNameExt ".csv"'
+		When not specified, equivalent to '-out "./%Y-%M-%D_%N.csv"'
+		(that will generate files like './2017-12-31_42.csv')
+
+		You can also juste put a folder path, like '-out ./specifiedPath/' (ending '/' needed to know it's a folder path)
+		In this case, generated file names will be like './specifiedPath/%Y-%M-%D_%N.csv'.
 
 	'-help' or '-h':
 		print this text instead of generating data 

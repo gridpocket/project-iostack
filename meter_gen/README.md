@@ -17,14 +17,12 @@ The application accepts the following options:
 - -config [.json file]
 - -metersType ['elec'/'electric'/'gas'/'mix'/'mixed']
 - -maxFileSize [size]
-- -separateDataBy [integer]
 - -startID [integer]
 - -lastID [integer]
 - -temp [boolean]
 - -meteoFile [file]
 - -location [boolean]
-- -out [path]
-- -fileNameExt [text]
+- -out [file name template]
 - -debug [boolean]
 - -help
 
@@ -55,7 +53,7 @@ meter_gen/                   // top folder
 The very important files to keep for meter_gen to work are `meter_gen.js`, `package.json` and `usageMessage.txt`.
 
 # Requirement
-NodeJS "moment" version 2.11.1 and up,
+NodeJS "moment" version 2.11.1 and up,  
 NodeJS "randgen" version 0.1.0 and up
 
 ## Installation
@@ -96,16 +94,16 @@ Note that a `./config.json` file should not exists to get the follwing results
 ```shell
 # Generating for 1000 meters in houses, all the meters (vid 0 till 999)
 # 1 data each hour (60minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
-# Generate all into only one file (default): './20170510152043/generated.csv'; 
+# Generate all into files names {year}-{month}-{day}_{index}.csv ('./2016-01-01_1.csv' to './2017-12-31_42.csv');
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
 node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
 
 # Generating for 1000 meters in houses not using electric heater ('gas'), only the meters 250 till 499,
 # 2 data each hour (30minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
-# Generate all into multiples 1MB files that will be located into ./out/ folder, files named {startID}-{index}.csv (250-1.csv 250-2.csv ...)
+# Generate all into multiples 1MB files that will be located into ./out/ folder, files named {year}-{index}.csv (2016-1.csv 2016-2.csv ... 2017-1.csv)
 # adding locations and temperatures to generated file
 node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 30 -metersType 'gas' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' \
-	-maxFileSize 1M -startID 250 -lastID 500 -location -temp -meteoFile './configs/meteoData.json' -out './out/'
+	-maxFileSize 1M -startID 250 -lastID 500 -location -temp -meteoFile './configs/meteoData.json' -out './out/%Y-%N.csv'
 ```
 
 ### Examples using config file
@@ -131,7 +129,7 @@ Command:
 # using default config file ./config.json
 # Generating for 1000 meters in houses using electric heater, the meters 0 till 999
 # 2 data each hour (120minutes interval) since Ferbuary 1st 2016 00h00 to May 1st 2016 00h00 (but no others data for 1st of May)
-# Generate all into only one file (default): './20170510152043/generated.csv'; 
+# Generate all into files names {year}-{month}-{day}_{index}.csv ('./2016-01-01_1.csv' to './2017-12-31_42.csv');
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
 # printing progressing status and memory consumption to console while generating (-debug option)
 node ./meter_gen.js
@@ -139,7 +137,7 @@ node ./meter_gen.js
 # using default config file ./config.json
 # Generating for 1234 meters (overriding config file) in houses using electric heater, the meters 500 till 1233
 # 2 data each hour (120minutes interval) since Ferbuary 1st 2016 00h00 to May 1st 2016 00h00 (but no others data for 1st of May)
-# Generate all into only one file (default): './20170510152043/generated.csv'; 
+# Generate all into files names {year}-{month}-{day}_{index}.csv ('./2016-01-01_1.csv' to './2017-12-31_42.csv');
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
 # adding locations and temperatures to generated file (meteoFile is defined in config.json)
 # not printing progressing status to console (-debug false overriding)
@@ -173,9 +171,9 @@ GitHub Wiki: https://github.com/gridpocket/project-iostack/wiki/Meter_gen
 # Licence
 The meter_gen application is open source, free to modify and to be used for all non-commercial and commercial purposes.
 
-Created by GridPocket SAS, for IOStack project
+Created by GridPocket SAS, for IOStack project  
 Email contact@gridpocket.com for more information.
 
 Contributors : Guillaume Pilot, Filip Gluszak, César Carles, Nathaël Noguès  
-Last Modified time: 2017-06-05  
+Last Modified time: 2017-06-09  
 Last Modified by:   Nathaël Noguès  
