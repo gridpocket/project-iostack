@@ -5,7 +5,8 @@
   "main": "meter_gen.js",
   "dependencies": {
     "moment": "^2.11.1",
-    "randgen": "^0.1.0"
+    "randgen": "^0.1.0",
+    "shelljs": "^0.7.8"
   },
   "devDependencies": {},
   "scripts": {

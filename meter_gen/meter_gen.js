@@ -10,7 +10,7 @@
  *		 GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-06-09
+ * @Last Modified time: 2017-06-19
  *
  * Usage :
  *	  node meter_gen (options...)
@@ -25,6 +25,7 @@
 var moment = require('moment');
 var fs = require('fs');
 var randgen = require('randgen');
+var shell = require('shelljs');
 
 // Computing time
 console.time('total');
@@ -211,17 +212,19 @@ function chooseBetween(tab) {
 }
 
 function buildFolderReduce(path, folder) {
-	  path += folder + '/';
-	  if (!fs.existsSync(path))
-		  fs.mkdirSync(path);
+	path += folder + '/';
+	if (!fs.existsSync(path))
+		fs.mkdirSync(path);
 
-	  return path;
+	return path;
 }
 function buildFolder(folderPath) {
 	try {
 		// Build all folders path recursively
-		(folderPath+'a').split('/').slice(0,-1)
-		  .reduce(buildFolderReduce, '');
+		folderPath = (folderPath+'a').split('/').slice(0,-1);
+
+		// folderPath.reduce(buildFolderReduce, '');
+		shell.mkdir('-p', folderPath);
 	} catch (e) {
 		return e;
 	}
