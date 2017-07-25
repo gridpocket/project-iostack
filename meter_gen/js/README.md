@@ -113,13 +113,13 @@ Config file `./config.json`:
 {	"metersNumber":1000,
 	"beginDate":"2016/02/01",
 	"endDate":"2016/05/01",
-	"interval": 120,
-	"metersType": "electric",
+	"interval": 120, // each meter will generate 1 data every this interval in minutes of time (here 2h)
+	"metersType": "electric", // only generate data for meters in houses using elecrtical heat
 	"consumptionsFile": "./configs/consumptions.json",
 	"climatFile": "./configs/climats.json",
 	"locationsFile": "./configs/locations.json",
 	"meteoFile": "./configs/meteoData.json",
-	"debug":true
+	"debug":true // print progressing status while generating
 }
 ```
 
@@ -148,6 +148,9 @@ node ./meter_gen.js -config './anotherConfig.json'
 ```
 	
 # Example of generated csv file content:
+
+Row sample:
+
 ```csv
 date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,lng
 2016-02-01T00:00:00+01:00,255.8944154089721,0.2558944154089721,0,elec,METER000054,50,6.72,Paris,75,48.848158,2.327835
@@ -175,5 +178,5 @@ Created by GridPocket SAS, for IOStack project
 Email contact@gridpocket.com for more information.
 
 Contributors : Guillaume Pilot, Filip Gluszak, César Carles, Nathaël Noguès  
-Last Modified time: 2017-06-09  
+Last Modified time: 2017-06-21  
 Last Modified by:   Nathaël Noguès  

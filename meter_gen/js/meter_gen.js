@@ -10,7 +10,7 @@
  *		 GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-06-19
+ * @Last Modified time: 2017-07-25
  *
  * Usage :
  *	  node meter_gen (options...)
@@ -18,7 +18,7 @@
  *	  node --expose-gc meter_gen (options...)
  *
  * Example usage:
- *	 node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -separateDataBy 1 -location
+ *	 node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -location
 **/
 
 // jshint esversion: 6, boss: true
@@ -211,19 +211,10 @@ function chooseBetween(tab) {
 	return null;
 }
 
-function buildFolderReduce(path, folder) {
-	path += folder + '/';
-	if (!fs.existsSync(path))
-		fs.mkdirSync(path);
-
-	return path;
-}
 function buildFolder(folderPath) {
 	try {
 		// Build all folders path recursively
-		folderPath = (folderPath+'a').split('/').slice(0,-1);
-
-		// folderPath.reduce(buildFolderReduce, '');
+		folderPath = (folderPath+'a').split('/').slice(0,-1).join('/');
 		shell.mkdir('-p', folderPath);
 	} catch (e) {
 		return e;
@@ -709,7 +700,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	};
 
 
-	for(let d=moment(params.beginDate); d<=params.endDate; d.add(params.interval, 'minutes')) { // For each period of time
+	for(let d=moment(params.beginDate); d<params.endDate; d.add(params.interval, 'minutes')) { // For each period of time
 		minutesSinceMid += params.interval;
 
 		if(minutesSinceMid >= 24*60) { // next day
