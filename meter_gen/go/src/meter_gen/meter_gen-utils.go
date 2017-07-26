@@ -111,3 +111,42 @@ func FileExists(filePath string) (bool, error) {
 	}
 	return err == nil, err
 }
+
+func JsonFileToStrMap(filePath string) (map[string]string, error) {
+	fileBytes, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return JsonAsMapStr(fileBytes)
+}
+func JsonToStrMap(jsonObject []byte) (map[string]string, error) {
+	var strMap = make(map[string]string)
+
+	var jsonMap map[string]interface{}
+	err = json.Unmarshal(jsonObject, &jsonMap) // get config file as json object
+	if err != nil {
+		return strMap, err
+	}
+
+	for key, val := range jsonMap {
+		strMap[key] = fmt.Sprint(val)
+	}
+
+	return strMap, nil
+}
+func JsonToStrSlice(jsonObject []byte) ([]string, error) {
+	var strSlice = make([]string)
+
+	var jsonMap []interface{}
+	err = json.Unmarshal(jsonObject, &jsonMap) // get config file as json object
+	if err != nil {
+		return strSlice, err
+	}
+
+	for _, val := range jsonMap {
+		strSlice.append(fmt.Sprint(val))
+	}
+
+	return strSlice, nil
+}

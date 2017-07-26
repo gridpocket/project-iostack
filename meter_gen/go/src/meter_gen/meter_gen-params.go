@@ -317,35 +317,20 @@ func loadConfigRecursive(argsMap map[string]string, errors int, recursive []stri
 			fmt.Println("ERROR:", CONFIG_KEY, "loop detected:", configPath, "is directly or indirectly referencing itself.")
 			errors++
 		} else {
-			var jsonConfig map[string]interface{}
-			var stringConfig = make(map[string]string)
+			var jsonConfig = JsonFileToStrMap(configPath)
 
-			fileStr, err := ioutil.ReadFile(configPath)
-			if err != nil {
-				panic(err)
-			}
-
-			err = json.Unmarshal(fileStr, &jsonConfig) // get config file as json object
-			if err != nil {
-				panic(err)
-			}
-
-			for key, val := range jsonConfig {
-				stringConfig[key] = fmt.Sprint(val)
-			}
-
-			if _, hasConfig := stringConfig[CONFIG_KEY]; hasConfig {
-				argsMap[CONFIG_KEY] = stringConfig[CONFIG_KEY]
+			if _, hasConfig := jsonConfig[CONFIG_KEY]; hasConfig {
+				argsMap[CONFIG_KEY] = jsonConfig[CONFIG_KEY]
 			} else {
 				delete(argsMap, CONFIG_KEY)
 			}
-			delete(stringConfig, CONFIG_KEY)
+			delete(jsonConfig, CONFIG_KEY)
 
 			// Add this file name to 'recursive' list, to maybe later detect recursivity loop
 			recursive = append(recursive, configPath)
 
 			// Get herited parameters
-			param, errors = loadConfigRecursive(stringConfig, 0, recursive)
+			param, errors = loadConfigRecursive(jsonConfig, 0, recursive)
 			fmt.Println("Loaded config from", configPath)
 		}
 	}

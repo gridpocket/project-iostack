@@ -17,40 +17,10 @@
 package main
 
 import (
-	//"encoding/json"
-	//"io"
-	"fmt"
 	"meter_gen"
 	"os"
 )
 
 func main() {
-
-	// Get command line arguments
-	/*var params =*/ fmt.Println(meter_gen.GetParameters(os.Args[1:]))
-
-	/*
-
-		//
-		// TODO
-		//
-
-		// Save file descriptors to faster use
-		var openFiles = make(map[string]int)
-
-		var configMeteo = GetMeteoConfig(params.meteoFile)
-		var configClimat = GetClimatConfig(params.climatFile)
-
-		var metersTab = GenerateMeters(params, configClimat.climatZone, configMeteo)
-
-		data, err := ioutil.ReadFile(params.consumptionsFile)
-		if err != nil {
-			panic(err)
-		}
-
-		var configConsum = json.Unmarshal(data)
-
-		generateDataLoop(params, configClimat, configConsum, metersTab, configMeteo)
-
-	*/
+	meter_gen.Main(os.Args[1:])
 }
