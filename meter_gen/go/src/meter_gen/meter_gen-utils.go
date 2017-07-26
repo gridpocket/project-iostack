@@ -5,15 +5,22 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-25
+ * @Last Modified time: 2017-07-26
 **/
 
 package meter_gen
 
 import (
 	"github.com/kardianos/osext"
-	"runtime"
+	"os"
+	"path"
 	"time"
+)
+
+const (
+	TYPE_ELE = "elec"
+	TYPE_GAS = "gas"
+	TYPE_MIX = "mix"
 )
 
 type Params struct {
@@ -23,7 +30,7 @@ type Params struct {
 	interval         time.Duration // int64
 	metersType       string
 	maxFileSize      uint64
-	startID          uint64
+	firstID          uint64
 	lastID           uint64
 	temp             bool
 	location         bool
@@ -47,19 +54,19 @@ func GetExecutionDir() string {
 	return "."
 }
 
-func IndexOf(s []string, e string) int {
-	for i, a := range s {
-		if a == e {
+func IndexOf(arr []string, test string) int {
+	for i, a := range arr {
+		if a == test {
 			return i
 		}
 	}
 	return -1
 }
 
-func FileExists(name string) (bool, error) {
-	err := os.Stat(name)
+func FileExists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
-	return err != nil, err
+	return err == nil, err
 }
