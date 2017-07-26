@@ -93,6 +93,7 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 
 	// Set default optional values in Params
 	param.out = "./%Y-%M-%D_%N.csv"
+	param.metersType = TYPE_MIX
 
 	// Importing parameters to Params object and checking format and values
 	var err error
@@ -254,6 +255,14 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 		}
 	}
 
+	// Set default optional values in Params
+	if param.out[len(param.out)-1] == '/' {
+		param.out += "%Y-%M-%D_%N.csv"
+	}
+	if param.lastID == 0 {
+		param.lastID = param.metersNumber
+	}
+
 	// Check parameters compatibility
 	if !param.endDate.After(param.beginDate) {
 		fmt.Printf(ERR_MSG_BEG+"should be before endDate ('%v')\n", "beginDate", param.endDate, param.beginDate)
@@ -270,9 +279,6 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	if param.lastID < param.firstID {
 		fmt.Printf(ERR_MSG_BEG+"should be lower than lastID ('%v')\n", "firstID", param.firstID, param.lastID)
 		errors++
-	}
-	if param.out[len(param.out)-1] == '/' {
-		param.out += "%Y-%M-%D_%N.csv"
 	}
 	if param.maxFileSize > 0 && !strings.Contains(param.out, "%N") {
 		fmt.Printf(ERR_MSG_BEG+"need to contains '%%N' when maxFileSize ('%v') > 0 (to be replaced by file number during execution)", "out", param.out, param.maxFileSize)

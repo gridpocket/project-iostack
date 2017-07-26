@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-25
+ * @Last Modified time: 2017-07-26
  *
  * Usage :
  *	  ./meter_gen (options...)
@@ -19,6 +19,7 @@ package main
 import (
 	//"encoding/json"
 	//"io"
+	"fmt"
 	"meter_gen"
 	"os"
 )
@@ -26,7 +27,7 @@ import (
 func main() {
 
 	// Get command line arguments
-	/*var params =*/ meter_gen.GetParameters(os.Args[1:])
+	/*var params =*/ fmt.Println(meter_gen.GetParameters(os.Args[1:]))
 
 	/*
 

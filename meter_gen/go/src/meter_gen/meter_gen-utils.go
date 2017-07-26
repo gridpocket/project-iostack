@@ -11,6 +11,7 @@
 package meter_gen
 
 import (
+	"fmt"
 	"github.com/kardianos/osext"
 	"os"
 	"path"
@@ -40,6 +41,46 @@ type Params struct {
 	locationsFile    string
 	out              string
 	debug            bool
+}
+
+func (p Params) String() string {
+	var nbDates uint64 = uint64(p.endDate.Unix()-p.beginDate.Unix()) / uint64(p.interval.Seconds())
+	var nbData uint64 = nbDates * (p.lastID - p.firstID)
+	var nbDataTotal uint64 = nbDates * p.metersNumber
+
+	return fmt.Sprintf(`Params:
+	Meters %d to %d/%d (%d/%d data),
+	from: %v,
+	to:   %v,
+	each: %v minutes,
+	type: %s,
+	maxFileSize: %d B,
+	consumptionsFile: %s,
+	climatFile:       %s,
+	meteoFile:        %s,
+	locationsFile:    %s,
+	out: %v,
+	temp:     %v,
+	location: %v,
+	debug:    %v`,
+		p.firstID,
+		p.lastID-1,
+		p.metersNumber,
+		nbData,
+		nbDataTotal,
+		p.beginDate,
+		p.endDate,
+		int(p.interval.Minutes()),
+		p.metersType,
+		p.maxFileSize,
+		p.consumptionsFile,
+		p.climatFile,
+		p.meteoFile,
+		p.locationsFile,
+		p.out,
+		p.temp,
+		p.location,
+		p.debug)
 }
 
 func GetMeterGenDir() string {
