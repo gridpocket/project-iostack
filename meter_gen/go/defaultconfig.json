@@ -1,7 +1,0 @@
-{
-	"consumptionsFile": "../configs/consumptions.json",
-	"climatFile": "../configs/climats.json",
-	"locationsFile": "../configs/locations.json",
-	"meteoFile": "../configs/meteoData.json",
-	"debug": false
-}
