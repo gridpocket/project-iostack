@@ -10,7 +10,7 @@
  *		 GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-25
+ * @Last Modified time: 2017-07-31
  *
  * Usage :
  *	  node meter_gen (options...)
@@ -95,7 +95,8 @@ function getFile(params, fileName, createIfNotExists=true) {
 	openFiles.set(fileName, fileDescriptor);
 	curFileSize = 0;
 
-	const firstLine = ['date,index,sumHC,sumHP,type,vid,size'];
+	const firstLine = ['vid, date,index,sumHC,sumHP,type,size'];
+
 	if(params.temp)
 		firstLine.push('temp');
 	if(params.location)
@@ -142,7 +143,7 @@ function loadArgs(map, recursive=[]) {
 		interval: null,
 		metersType: null,
 		maxFileSize: null,
-		startID: null,
+		firstID: null,
 		lastID: null,
 		temp: null,
 		location: null,
@@ -155,6 +156,15 @@ function loadArgs(map, recursive=[]) {
 	};
 
 	let hasErrors = false;
+
+
+	// If no config file specified, use default config file
+	if(!map.has('config')) {
+		if(recursive.indexOf('./config.json') < 0 && fs.existsSync('./config.json'))
+			map.set('config', './config.json');
+		else if(recursive.indexOf(__dirname+'/defaultconfig.json') < 0 && fs.existsSync(__dirname+'/defaultconfig.json'))
+			map.set('config', __dirname+'/defaultconfig.json');
+	}
 
 	// Loading argument -config
 	if(map.has('config')) {
@@ -175,6 +185,7 @@ function loadArgs(map, recursive=[]) {
 			// Add this file name to 'recursive' list, to maybe later detect recursivity loop
 			recursive.push(configFile);
 			[params, hasErrors] = loadArgs(paramsMap, recursive);
+			console.log("Loaded config from", configFile);
 		}
 	}
 
@@ -186,6 +197,10 @@ function loadArgs(map, recursive=[]) {
 	map.forEach((value, key) => {
 		if(params.hasOwnProperty(key))
 			params[key] = value;
+		else if(key === 'startID') {
+			console.error('WARNING: Deprecated use of "startID", please use "firstID" instead.');
+			params.firstID = value;
+		}
 		else if(key !== 'config') {
 			console.error('ERROR: Unrecognised option "'+key+'"');
 			hasErrors = true;
@@ -255,16 +270,13 @@ function getParameters(args) {
 		}
 	}
 
-	// If no config file specified, and there is a ./config.json, use it as default config file
-	if(!map.has('config') && fs.existsSync('./config.json'))
-		map.set('config', './config.json');
-
 	// loading arguments
 	let errNb = 0;
 	let params;
 	{
 		let hasErrors = false;
 		[params, hasErrors] = loadArgs(map);
+			console.log("Loaded config from command line");
 		if(hasErrors)
 			errNb++;
 	}
@@ -354,16 +366,16 @@ function getParameters(args) {
 	}
 
 	// StartID
-	if(params.startID === null) {
-		params.startID = 0;
+	if(params.firstID === null) {
+		params.firstID = 0;
 	} else {
-		let startID = params.startID|0;
-		if(startID < 0 || (params.metersNumber && startID >= params.metersNumber)) {
-			console.error('ERROR: startID should be an integer between 0 and (meters number -1) (was "'+params.startID+'")');
+		let firstID = params.firstID|0;
+		if(firstID < 0 || (params.metersNumber && firstID >= params.metersNumber)) {
+			console.error('ERROR: firstID should be an integer between 0 and (meters number -1) (was "'+params.firstID+'")');
 			errNb++;
-			params.startID = 0;
+			params.firstID = 0;
 		} else {
-			params.startID = startID;
+			params.firstID = firstID;
 		}
 	}
 
@@ -382,8 +394,8 @@ function getParameters(args) {
 	}
 
 	// StartID LastID
-	if(params.lastID <= params.startID) {
-		console.error('ERROR: startID should be less than lastID (was startID:"'+params.startID+'", lastID:"'+params.lastID+'")');
+	if(params.lastID <= params.firstID) {
+		console.error('ERROR: firstID should be less than lastID (was firstID:"'+params.firstID+'", lastID:"'+params.lastID+'")');
 		errNb++;
 	}
 
@@ -566,10 +578,10 @@ function generateMeters(params, climatZone, configMeteo) {
 	let cityMeteoCenters;
 	let curr_id = 0;
 
-	// Go forwoard until the startID (ignoring the firsts locations)
-	while(curr_id < params.startID) {
+	// Go forwoard until the firstID (ignoring the firsts locations)
+	while(curr_id < params.firstID) {
 		const city = locations[0]; // city: {country,region,city,lattitude,longitude,radius,pop}
-		const dec = (city.pop < params.startID-curr_id) ? city.pop : params.startID-curr_id;
+		const dec = (city.pop < params.firstID-curr_id) ? city.pop : params.firstID-curr_id;
 
 		city.pop -= dec;
 		curr_id += dec;
@@ -578,11 +590,11 @@ function generateMeters(params, climatZone, configMeteo) {
 			locations.shift();
 	}
 
-	// Compute these meters (between startID and lastID)
+	// Compute these meters (between firstID and lastID)
 	let lastCity = null;
 	let city = locations.shift(); // city: {country,region,city,lattitude,longitude,radius,pop}
 	let progress = 0;
-	const progressMax = (params.lastID - params.startID); // compute number of loops needed
+	const progressMax = (params.lastID - params.firstID); // compute number of loops needed
 	if(params.debug) printProgress('meters', 0, progressMax);
 
 	for(; curr_id < params.lastID; curr_id++) {
@@ -596,17 +608,17 @@ function generateMeters(params, climatZone, configMeteo) {
 		}
 
 		meter.line = [
+			'METER' + ('00000' + curr_id).slice(-6), // Meter ID
 			null, // date time (will be set later)
 			0, // conso
 			0, // highcost
 			0, // lowcost
 			(params.metersType === 'mix')?chooseBetween(consoTypeChances):params.metersType, // consumption type
-			'METER' + ('00000' + curr_id).slice(-6), // Meter ID
 			   chooseBetween(houseSurfaceChances) // home surface
 		];
 		if(params.temp || params.location) {
 			// ÷2 (stddev should be radius/2)
-			const lat =  randgen.rnorm(city.lat, city.radius*0.0045066473); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
+			const lat = randgen.rnorm(city.lat, city.radius*0.00450664730); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
 			const lng = randgen.rnorm(city.lng, city.radius*0.00449157829); // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
 
 			if(params.temp) {
@@ -748,7 +760,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 			// DataConsumption[energyType][surface]
 			//  energyType = meter.consumptionType==='elec'?'elec':'gas';
 			//  surface = 's'+meter.houseType;
-			const subConfig = configConsum[meter.line[4]]['s'+meter.line[6]];
+			const subConfig = configConsum[meter.line[5]]['s'+meter.line[6]];
 
 			const avg = subConfig[season][dayOfWeek][dayTime].avg * configClimat.climats[meter.climat][season].RatioAvg;
 			const stdev = subConfig[season][dayOfWeek][dayTime].stddev * configClimat.climats[meter.climat][season].RatioStddev;
@@ -756,9 +768,9 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 
 			//
 			// Update Line
-			meter.line[1] += curr_conso; // conso
-			meter.line[(hoursSinceMid>=7 && hoursSinceMid<22)?3:2] += curr_conso*0.001; // (if in [7h - 21h] so highcost then lowcost), convert to KWh
-			meter.line[0] = formatedDate;
+			meter.line[2] += curr_conso; // conso
+			meter.line[(hoursSinceMid>=7 && hoursSinceMid<22)?4:3] += curr_conso*0.001; // (if in [7h - 21h] so highcost then lowcost), convert to KWh
+			meter.line[1] = formatedDate;
 
 			if(params.temp)
 				meter.line[7] = computeTemperature(d, meter.meteoCoefs, configMeteo, hoursSinceMid, month).toFixed(2);
