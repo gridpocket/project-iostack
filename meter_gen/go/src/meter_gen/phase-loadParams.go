@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-26
+ * @Last Modified time: 2017-07-31
 **/
 
 package meter_gen
@@ -83,7 +83,7 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	const dateFormat = "2006/01/02"
 
 	// Check missing not optional parameters here
-	for _, key := range []string{"metersNumber", "beginDate", "endDate", "interval"} {
+	for _, key := range []string{"metersNumber", "firstDate", "lastDate", "interval"} {
 		if _, hasKey := paramsMap[key]; !hasKey {
 			fmt.Println("ERROR: " + key + " need to be specified")
 			errors++
@@ -110,15 +110,17 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 				errors++
 			}
 			break
-		case "beginDate": // string: 'YYYY-MM-DD' > time.Time
-			param.beginDate, err = time.Parse(dateFormat, value)
+		case "beginDate": // DEPRECATED
+		case "firstDate": // string: 'YYYY-MM-DD' > time.Time
+			param.firstDate, err = time.Parse(dateFormat, value)
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY/MM/DD'\n", key, value)
 				errors++
 			}
 			break
-		case "endDate": // string: 'YYYY-MM-DD' > time.Time
-			param.endDate, err = time.Parse(dateFormat, value)
+		case "endDate": // DEPRECATED
+		case "lastDate": // string: 'YYYY-MM-DD' > time.Time
+			param.lastDate, err = time.Parse(dateFormat, value)
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY/MM/DD'\n", key, value)
 				errors++
@@ -263,8 +265,8 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	}
 
 	// Check parameters compatibility
-	if !param.endDate.After(param.beginDate) {
-		fmt.Printf(ERR_MSG_BEG+"should be before endDate ('%v')\n", "beginDate", param.endDate, param.beginDate)
+	if !param.lastDate.After(param.firstDate) {
+		fmt.Printf(ERR_MSG_BEG+"should be before lastDate ('%v')\n", "firstDate", param.lastDate, param.firstDate)
 		errors++
 	}
 	if param.firstID >= param.metersNumber {

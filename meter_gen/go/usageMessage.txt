@@ -12,10 +12,10 @@ Needs:
 	'-metersNumber [integer]':
 		with 'integer' is 1 or more, represent the total number of meter all meter_gen processes will generate
 
-	'-beginDate [yyyy/mm/dd as string]':
+	'-firstDate [yyyy/mm/dd as string]':
 		The first date data will be generated at (basically at 00h00:00 of this date)
 
-	'-endDate [yyyy/mm/dd as string]':
+	'-lastDate [yyyy/mm/dd as string]':
 		No data will be after this date (except the data at endDate at 00h00:00 if data should be generated at this exact time)
 		endDate should be after beginDate (or equal if you need only 1 data by meter)
 
