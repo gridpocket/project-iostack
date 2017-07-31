@@ -9,4 +9,4 @@
 # @Last Modified time: 2017-07-31
 
 cd "`dirname \"$0\"`"
-sh workingTest.sh "../go/meter_gen" "out-go"
+sh workingTest.sh "../go/meter_gen"
