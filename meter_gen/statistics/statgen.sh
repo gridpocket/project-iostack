@@ -9,14 +9,14 @@
 # @Last Modified time: 2017-07-31
 
 echo "Generating One Elec..."
-$1 -config './statGenConf.json' -metersNumber 660000 -metersType 'elec' -beginDate '2017/01/01' -endDate '2017/01/01' -out './statgen/lightOneElec.csv'
+$1 -config './statGenConf.json' -metersNumber 660000 -metersType 'elec' -firstDate '2017-01-01T00:00' -lastDate '2017-01-01T00:00' -out './statgen/lightOneElec.csv'
 
 echo
 echo "Generating Day temperatures..."
 # a data each 10 minutes
-$1 -config './statGenConf.json' -metersNumber 3000 -beginDate '2017/01/01' -interval 10 -endDate '2017/01/02' -temp -out './statgen/dayTemperatures.csv'
+$1 -config './statGenConf.json' -metersNumber 3000 -firstDate '2017-01-01T00:00' -interval 10 -lastDate '2017-01-02T00:00' -temp -out './statgen/dayTemperatures.csv'
 
 echo
 echo "Generating Year temperatures..."
 # a data each 6 hours (at 6AM, 12AM, 6PM and 12PM)
-$1 -config './statGenConf.json' -metersNumber 3000 -beginDate '2016/01/01' -interval 360 -endDate '2017/01/01' -temp -out './statgen/yearTemperatures.csv'
+$1 -config './statGenConf.json' -metersNumber 3000 -firstDate '2016-01-01T00:00' -interval 360 -lastDate '2017-01-01T00:00' -temp -out './statgen/yearTemperatures.csv'

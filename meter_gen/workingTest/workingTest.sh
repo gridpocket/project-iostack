@@ -32,13 +32,13 @@ echo '\nTEST LASTID'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, computing only the first 10 meters (0 till 9)
 $1 -lastID 10 -out "./out/lastID.csv"
 
-echo '\nTEST STARTID'
+echo '\nTEST FIRSTID'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, computing only the last 10 meters (90 till 99)
-$1 -startID 90 -out "./out/startID.csv"
+$1 -firstID 90 -out "./out/firstID.csv"
 
-echo '\nTEST STARTID & LASTID'
+echo '\nTEST FIRSTID & LASTID'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, computing only 10 meters (45 till 54)
-$1 -startID 45 -lastID 55 -out "./out/start&last.csv"
+$1 -firstID 45 -lastID 55 -out "./out/first&last.csv"
 
 echo '\nTEST grouping data by hour'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, separating files according to generated year, month, day, hour and minute
@@ -48,17 +48,17 @@ echo '\nTEST grouping data by month'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, separating files according to generated year and month
 $1 -out "./out/sepFilesMonth/%Y/%M.csv"
 
-echo '\nTEST grouping data by day & STARTID & LASTID & LOC & TEMP'
+echo '\nTEST grouping data by day & FIRSTID & LASTID & LOC & TEMP'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, generating only users 45 till 54, printing locations and temperature, separating files by users (10 files)
-$1 -startID 45 -lastID 55 -location -temp -out "./out/sepFiles_start_last/%Y-%M.csv"
+$1 -firstID 45 -lastID 55 -location -temp -out "./out/sepFiles_first_last/%Y-%M.csv"
 
 echo '\nTEST MAXFILESIZE'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, separating files as no file make more than 1MBytes
 $1 -maxFileSize 1M -out "./out/maxFileSize10k/%N.csv"
 
-echo '\nTEST MAXFILESIZE & STARTID & LASTID & LOC & TEMP'
+echo '\nTEST MAXFILESIZE & FIRSTID & LASTID & LOC & TEMP'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, generating only users 45 till 54, printing locations and temperatures, separating files as no file make more than 1MBytes
-$1 -maxFileSize 1M -startID 45 -lastID 55 -location -temp -out "./out/maxFileSize_start_last/%N.csv"
+$1 -maxFileSize 1M -firstID 45 -lastID 55 -location -temp -out "./out/maxFileSize_first_last/%N.csv"
 
 echo '\nTEST grouping data by month & MAXFILESIZE'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from random heated houses, separating files according to generated year and month & cut each 100kb

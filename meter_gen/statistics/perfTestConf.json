@@ -1,12 +1,8 @@
 {
-	"beginDate":"2016/01/01",
+	"firstDate":"2016-01-01T00:00",
 	"interval": 30,
 	"location":true,
 	"temp":true,
 	"maxFileSize":"100M",
-	"consumptionsFile": "../configs/consumptions.json",
-	"climatFile": "../configs/climats.json",
-	"locationsFile": "../configs/locations.json",
-	"meteoFile": "../configs/meteoData.json",
 	"debug": true
 }
