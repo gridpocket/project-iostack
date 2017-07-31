@@ -4,4 +4,4 @@
 # @Last Modified time: 2017-07-31
 
 cd "`dirname \"$0\"`"
-sh ./workingTest.sh "node ../js/meter_gen.js" "out-js"
+sh ./workingTest.sh "node ../js/meter_gen.js"

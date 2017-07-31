@@ -45,15 +45,15 @@ Options:
 		Minimum: 1k (1 kB)
 		Maximum: 8388608G (8,388,608 GB)
 
-	'-startID [integer]':
-		with metersNumber > startID >= 0, and startID < lastID
+	'-firstID [integer]':
+		with metersNumber > firstID >= 0, and firstID < lastID
 		Meters ID will start from the specified ID
-		Example: -startID 30 > First ID will be METER00030, second will be METER00031 ...
+		Example: -firstID 30 > First ID will be METER00030, second will be METER00031 ...
 
-		if no startID specified, starting with id 0
+		if no firstID specified, starting with id 0
 
 	'-lastID [integer]':
-		with metersNumber >= lastID > 0, and lastID > startID
+		with metersNumber >= lastID > 0, and lastID > firstID
 		Meters ID will finish at lastID-1
 		Example: -lastID 30 > Last generated meter ID will be METER00029
 
@@ -74,8 +74,8 @@ Options:
 		If no option temp, equivalent to '-temp false'
 		If temp option is enabled, -meteoFile should be set
 
-		This option increases execution time proportionally to meters number to generate (lastID - startID),
-		can spent many time and potentially make Javascript Heap memory overflow error (depending on your machine, startID and lastID options)
+		This option increases execution time proportionally to meters number to generate (lastID - firstID),
+		can spent many time and potentially make Javascript Heap memory overflow error (depending on your machine, firstID and lastID options)
 
 	'-meteoFile [.json file]': (useless if not -temp option)
 		Specity the path to the file containing meteo information
