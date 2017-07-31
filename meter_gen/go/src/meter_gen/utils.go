@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-27
+ * @Last Modified time: 2017-07-31
 **/
 
 package meter_gen
@@ -101,4 +101,9 @@ func InterfaceSliceToString(slice []interface{}) []string {
 	}
 
 	return ret
+}
+
+func PrintProgress(phase string, progress uint64, max uint64) {
+	// TODO
+	fmt.Printf("%s: %d/%d (%5.2f%%)\r", phase, progress, max, float64(progress*10000/max)/100)
 }

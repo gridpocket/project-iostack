@@ -1,7 +1,12 @@
+#!/bin/sh
+#
+#  GridPocket Copyrights 2017
+# IOSTACK project www.iostack.eu
+#
 # @Author: Nathaël Noguès
 # @Date:   2017-04-14
 # @Last Modified by:   Nathaël Noguès
-# @Last Modified time: 2017-07-26
+# @Last Modified time: 2017-07-28
 
 echo 'TEST ELEC'
 # Generating 100 meters, with data for 5 monthes, one data by meter each 60minutes, all meters from electric heater houses

@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-28
+ * @Last Modified time: 2017-07-31
  *
 **/
 
@@ -26,15 +26,17 @@ func Main(args []string) {
 	// Save file descriptors to faster use
 	/*var openFiles = make(map[string]int)*/
 
-	/*var configMeteo =*/ GetMeteoConfig(params.meteoFile)
-	/*var configClimat =*/ GetClimatConfig(params.climatFile)
+	var configMeteo = GetMeteoConfig(params.meteoFile)
+	var configClimat = GetClimatConfig(params.climatFile)
+
+	var metersTab = GenerateMeters(params, configMeteo, configClimat.zones)
+
+	fmt.Print(len(metersTab), metersTab[0])
 
 	/*
 		//
 		// TODO
 		//
-
-		var metersTab = GenerateMeters(params, configClimat.climatZone, configMeteo)
 
 		data, err := ioutil.ReadFile(params.consumptionsFile)
 		if err != nil {
@@ -43,6 +45,6 @@ func Main(args []string) {
 
 		var configConsum = json.Unmarshal(data)
 
-		generateDataLoop(params, configClimat, configConsum, metersTab, configMeteo)
+		GenerateDataLoop(params, configClimat, configConsum, metersTab, configMeteo)
 	*/
 }
