@@ -80,7 +80,7 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	fmt.Println("Loaded config from command line")
 
 	var param Params
-	const dateFormat = "2006/01/02"
+	const dateFormat = "2006-01-02T03:04"
 
 	// Check missing not optional parameters here
 	for _, key := range []string{"metersNumber", "firstDate", "lastDate", "interval"} {
@@ -109,23 +109,18 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 1\n", key, value)
 				errors++
 			}
-			break
-		case "beginDate": // DEPRECATED
-		case "firstDate": // string: 'YYYY-MM-DD' > time.Time
+		case "beginDate", "firstDate": // string: 'YYYY-MM-DDTHH:mm' > time.Time
 			param.firstDate, err = time.Parse(dateFormat, value)
 			if err != nil {
-				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY/MM/DD'\n", key, value)
+				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY-MM-DDTHH:mm'\n", key, value)
 				errors++
 			}
-			break
-		case "endDate": // DEPRECATED
-		case "lastDate": // string: 'YYYY-MM-DD' > time.Time
+		case "endDate", "lastDate": // string: 'YYYY-MM-DDTHH:mm' > time.Time
 			param.lastDate, err = time.Parse(dateFormat, value)
 			if err != nil {
-				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY/MM/DD'\n", key, value)
+				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY-MM-DDTHH:mm'\n", key, value)
 				errors++
 			}
-			break
 		case "interval": // int > time.Duration
 			var interval int
 			interval, err := strconv.Atoi(value)
@@ -139,7 +134,6 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 			} else {
 				param.interval = time.Duration(interval) * time.Minute
 			}
-			break
 		case "metersType": // string > TYPE_xxx
 			if value[:3] == "mix" {
 				param.metersType = TYPE_MIX
@@ -151,7 +145,6 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 				fmt.Printf(ERR_MSG_BEG+"is neither 'mix', 'elec' nor 'gas'\n", key, value)
 				errors++
 			}
-			break
 		case "maxFileSize": // string: [1-9][0-9]*[obkmg] > uint64
 			var unite = strings.ToLower(value)[len(value)-1]
 			param.maxFileSize, err = strconv.ParseUint(value[:len(value)-1], 10, 64)
@@ -167,20 +160,20 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 			switch unite {
 			case 'g':
 				param.maxFileSize *= 1024 // gigabyte
+				fallthrough
 			case 'm':
 				param.maxFileSize *= 1024 // megabyte
+				fallthrough
 			case 'k':
 				param.maxFileSize *= 1024 // kilobyte
-			case 'o': // octet (French 'byte')
-			case 'b': // byte
-				break
+				fallthrough
+			case 'o', 'b': // byte
+				/* nothing */
 			default:
 				fmt.Printf(ERR_MSG_BEG+"is a positive integer not followed by 'o'/'B', 'k', 'M' or 'G'\n", key, value)
 				errors++
 			}
-			break
-		case "startID": // DEPRECATED /* act like firstID */
-		case "firstID": // uint64
+		case "startID", "firstID": // uint64
 			param.firstID, err = strconv.ParseUint(value, 10, 64)
 
 			if err != nil {
@@ -190,7 +183,6 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 0\n", key, value)
 				errors++
 			}
-			break
 		case "lastID": // uint64
 			param.lastID, err = strconv.ParseUint(value, 10, 64)
 
@@ -201,7 +193,6 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 1\n", key, value)
 				errors++
 			}
-			break
 		case "temp": // bool
 			if value == "" {
 				param.temp = true
@@ -212,7 +203,6 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 					errors++
 				}
 			}
-			break
 		case "location": // bool
 			if value == "" {
 				param.location = true
@@ -223,22 +213,16 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 					errors++
 				}
 			}
-			break
 		case "consumptionsFile": // string
 			param.consumptionsFile = value
-			break
 		case "climatFile": // string
 			param.climatFile = value
-			break
 		case "meteoFile": // string
 			param.meteoFile = value
-			break
 		case "locationsFile": // string
 			param.locationsFile = value
-			break
 		case "out": // string
 			param.out = value
-			break
 		case "debug": // bool
 			if value == "" {
 				param.debug = true // bool
@@ -249,7 +233,6 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 					errors++
 				}
 			}
-			break
 		default:
 			fmt.Printf("ERROR: Unrecognized parameter '"+key+"', value: '%v'\n", value)
 			errors++
@@ -349,7 +332,7 @@ func loadConfigRecursive(argsMap map[string]string, errors int, recursive []stri
 	}
 
 	// Add new and rewrited parameters
-	for key, _ := range argsMap {
+	for key := range argsMap {
 		param[key] = argsMap[key]
 	}
 

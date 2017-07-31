@@ -161,6 +161,7 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 
 	// Compute these meters (between startID and lastID)
 	var cityMeteoCenters []*MeteoRecord
+	var metersCities = make(map[*location]*City)
 	var lastCity *location
 	var city = &locations[0]
 	locations = locations[1:]
@@ -173,32 +174,30 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 
 	for ; curr_id < params.lastID; curr_id++ {
 		var meter Meter
+		meter.vid = curr_id
 
 		// region climat
-		meter.climat = zones[city.Country][fmt.Sprint(city.Region)]
-
-		if meter.climat == "" {
-			fmt.Println("ERROR: Region", city.Region, "not referenced in climat file")
-			return nil
+		if metersCities[city] == nil {
+			var c City
+			c.name = city.Name
+			c.country = city.Country
+			c.region = fmt.Sprint(city.Region)
+			c.climat = zones[city.Country][c.region]
+			metersCities[city] = new(City)
 		}
 
-		meter.line = make([]interface{}, 0)
-		meter.line = append(meter.line, nil)                                // date time (will be set later)
-		meter.line = append(meter.line, 0)                                  // conso
-		meter.line = append(meter.line, 0)                                  // highcost
-		meter.line = append(meter.line, 0)                                  // lowcost
-		meter.line = append(meter.line, params.metersType)                  // consumption type
-		meter.line = append(meter.line, fmt.Sprintf("METER%06d", curr_id))  // Meter ID
-		meter.line = append(meter.line, chooseBetween(houseSurfaceChances)) // home surface
+		meter.surface = chooseBetween(houseSurfaceChances)
 
 		if params.metersType == TYPE_MIX {
-			meter.line[4] = chooseBetween(consoTypeChances)
+			meter.consoType = chooseBetween(consoTypeChances)
+		} else {
+			meter.consoType = params.metersType
 		}
 
 		if params.temp || params.location {
 			// ÷2 (stddev should be radius/2)
-			var lat = rand.NormFloat64()*city.radius*0.00450664730 + city.Lat // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
-			var lng = rand.NormFloat64()*city.radius*0.00449157829 + city.Lng // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
+			meter.lat = rand.NormFloat64()*city.radius*0.00450664730 + city.Lat // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
+			meter.lng = rand.NormFloat64()*city.radius*0.00449157829 + city.Lng // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
 
 			if params.temp {
 				// If changed city, and cityMeteoCenters not already = Array.from(configMeteo.values());
@@ -231,8 +230,8 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 				// sorting by distance
 				for i := len(cityMeteoCenters) - 1; i > 0; i-- {
 					for j := i - 1; j >= 0; j-- {
-						if distance(lat, lng, cityMeteoCenters[i].Lat, cityMeteoCenters[i].Lng) <
-							distance(lat, lng, cityMeteoCenters[j].Lat, cityMeteoCenters[j].Lng) {
+						if distance(meter.lat, meter.lng, cityMeteoCenters[i].Lat, cityMeteoCenters[i].Lng) <
+							distance(meter.lat, meter.lng, cityMeteoCenters[j].Lat, cityMeteoCenters[j].Lng) {
 							cityMeteoCenters[i], cityMeteoCenters[j] = cityMeteoCenters[j], cityMeteoCenters[i]
 						}
 					}
@@ -243,7 +242,7 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 				var meteoCoefs = make(map[*MeteoRecord]float64)
 				var totalCoefs float64
 				for i := int(math.Max(5, float64(len(cityMeteoCenters)))) - 1; i >= 0; i-- {
-					var coef = 1 / (distance(lat, lng, cityMeteoCenters[i].Lat, cityMeteoCenters[i].Lng) + 0.0001)
+					var coef = 1 / (distance(meter.lat, meter.lng, cityMeteoCenters[i].Lat, cityMeteoCenters[i].Lng) + 0.0001)
 					meteoCoefs[cityMeteoCenters[i]] = coef
 					totalCoefs += coef
 				}
@@ -252,15 +251,6 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 				for key := range meteoCoefs {
 					meteoCoefs[key] /= totalCoefs
 				}
-
-				meter.line = append(meter.line, 0.0) // temperature, will be set later
-			}
-
-			if params.location {
-				meter.line = append(meter.line, city.Name)
-				meter.line = append(meter.line, city.Region)
-				meter.line = append(meter.line, fmt.Sprintf("%.6f", lat))
-				meter.line = append(meter.line, fmt.Sprintf("%.6f", lng))
 			}
 		}
 
