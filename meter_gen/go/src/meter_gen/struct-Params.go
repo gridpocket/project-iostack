@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-26
+ * @Last Modified time: 2017-07-31
 **/
 
 package meter_gen
@@ -23,8 +23,8 @@ const (
 
 type Params struct {
 	metersNumber     uint64
-	beginDate        time.Time
-	endDate          time.Time
+	firstDate        time.Time
+	lastDate         time.Time
 	interval         time.Duration // int64
 	metersType       string
 	maxFileSize      uint64
@@ -41,7 +41,7 @@ type Params struct {
 }
 
 func (p Params) String() string {
-	var nbDates uint64 = uint64(p.endDate.Unix()-p.beginDate.Unix()) / uint64(p.interval.Seconds())
+	var nbDates uint64 = uint64(p.lastDate.Unix()-p.firstDate.Unix()) / uint64(p.interval.Seconds())
 	var nbData uint64 = nbDates * (p.lastID - p.firstID)
 	var nbDataTotal uint64 = nbDates * p.metersNumber
 
@@ -65,8 +65,8 @@ func (p Params) String() string {
 		p.metersNumber,
 		nbData,
 		nbDataTotal,
-		p.beginDate,
-		p.endDate,
+		p.firstDate,
+		p.lastDate,
 		int(p.interval.Minutes()),
 		p.metersType,
 		p.maxFileSize,
