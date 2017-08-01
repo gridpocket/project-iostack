@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-31
+ * @Last Modified time: 2017-08-01
 **/
 
 package meter_gen
@@ -28,8 +28,8 @@ type Meter struct {
 	temp      float64
 }
 
-func (this Meter) toString(date time.Time, printsLocation bool, printsTemp bool) string {
-	var text = fmt.Sprintf("METER%06d,%s,%v,%v,%v,%s,%d",
+func (this Meter) toString(date time.Time, printsLocation, printsTemp bool) string {
+	var text = fmt.Sprintf("METER%06d,%s,%v,%v,%v,%s,%s",
 		this.vid,
 		date.Format(time.RFC3339),
 		this.index,
@@ -39,14 +39,15 @@ func (this Meter) toString(date time.Time, printsLocation bool, printsTemp bool)
 		this.surface)
 
 	if printsLocation {
-		text += fmt.Sprintf("%.06f,%.06f,%s,%s,%v",
+		text = fmt.Sprintf("%s,%.06f,%.06f,%s,%s",
+			text,
 			this.lat,
 			this.lng,
 			this.city.name,
 			this.city.region)
 	}
 	if printsTemp {
-		text = text + fmt.Sprint(this.temp)
+		text = fmt.Sprintf("%s,%.2f", text, this.temp)
 	}
 	return text
 }

@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-28
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-31
+ * @Last Modified time: 2017-08-01
 **/
 
 package meter_gen
@@ -183,9 +183,10 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 			c.country = city.Country
 			c.region = fmt.Sprint(city.Region)
 			c.climat = zones[city.Country][c.region]
-			metersCities[city] = new(City)
+			metersCities[city] = &c
 		}
 
+		meter.city = metersCities[city]
 		meter.surface = chooseBetween(houseSurfaceChances)
 
 		if params.metersType == TYPE_MIX {

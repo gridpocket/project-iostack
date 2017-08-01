@@ -17,17 +17,7 @@ rm go1.8.3.linux-amd64.tar.gz
 # Check working
 
 ```sh
-mkdir gotest/
-
-echo 'package main' > gotest/gotest.go
-echo 'import "fmt"' >> gotest/gotest.go
-echo 'func main() {' >> gotest/gotest.go
-echo '   fmt.Printf("Hello world !\n")' >> gotest/gotest.go
-echo '}' >> gotest/gotest.go
-
-cd gotest
-go build
-./gotest
-
-# should print 'Hello world !'
+# in folder project-iostack/meter_gen
+sh ./go/compile.sh
+sh ./workingTest/workingTest-go.sh
 ```
