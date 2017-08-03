@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-28
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-01
+ * @Last Modified time: 2017-08-03
 **/
 
 package meter_gen
@@ -16,7 +16,6 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
-	//"sort"
 )
 
 const SIZE_POP_RATIO = 121.519 // average france density, used as constant ratio to reduce size of smallest cities
@@ -32,7 +31,7 @@ type location struct {
 	radius  float64
 }
 type locChance struct {
-	index    int
+	index    uint64
 	roundErr float64
 }
 
@@ -49,14 +48,10 @@ func getLocations(fileName string, totalPop uint64) []location {
 	}
 
 	var sum_pop uint64 = 0
-	var readIndex int = 0
-	var writeIndex int = 0
-	var locLen = len(locations)
+	var writeIndex uint64 = 0
 
 	// compute sum population and remove cities with no population
-	for ; readIndex < locLen; readIndex++ {
-		var curr_loc = locations[readIndex]
-
+	for _, curr_loc := range locations {
 		if curr_loc.Pop < 1 {
 			continue // not enough population in this city, not taken into acount
 		}
@@ -76,21 +71,19 @@ func getLocations(fileName string, totalPop uint64) []location {
 	var chances []locChance
 	var metersRemaining = totalPop
 
-	for i := writeIndex - 1; i >= 0; i-- {
+	for i, currLoc := range locations {
+		var computedPop = float64(currLoc.Pop) * float64(totalPop) / float64(sum_pop)
+		currLoc.Pop = uint64(computedPop) // rounding down
+
 		var lc locChance
-		lc.index = i
-
-		var computedPop = float64(locations[i].Pop) * float64(totalPop) / float64(sum_pop)
-		locations[i].Pop = uint64(computedPop) // rounding down
-
-		lc.roundErr = computedPop - float64(locations[i].Pop)
-		metersRemaining -= locations[i].Pop
+		lc.index = uint64(i)
+		lc.roundErr = computedPop - float64(currLoc.Pop)
+		metersRemaining -= currLoc.Pop
 		chances = append(chances, lc)
 	}
 
 	// Sort list as cities with more rounding errors are first indexes
-	readIndex = 0
-	for readIndex = len(chances) - 1; readIndex > 0; readIndex-- {
+	for readIndex := len(chances) - 1; readIndex > 0; readIndex-- {
 		val := chances[readIndex]
 		for index2 := readIndex - 1; index2 >= 0; index2-- {
 			val2 := chances[index2]
@@ -100,13 +93,6 @@ func getLocations(fileName string, totalPop uint64) []location {
 			}
 		}
 	}
-	/*sort.Slice(chances, func(b locChance, a locChance) bool {
-		if a.roundErr == b.roundErr {
-			return locations[b.index].Pop > locations[a.index].Pop
-		}
-
-		return a.roundErr > b.roundErr
-	})*/
 
 	// Add missing population to have exactly the wanted meters number
 	for i := 0; metersRemaining > 0; metersRemaining-- {
@@ -116,52 +102,40 @@ func getLocations(fileName string, totalPop uint64) []location {
 	}
 
 	// Remove locations with no people
-	readIndex = 0
 	writeIndex = 0
-	locLen = len(locations)
-	for ; readIndex < locLen; readIndex++ {
-		var curr_loc = locations[readIndex]
-
-		if curr_loc.Pop < 1 {
-			continue // not enough population in this city, not taken into acount
+	for _, curr_loc := range locations {
+		if curr_loc.Pop > 1 {
+			locations[writeIndex] = curr_loc
+			writeIndex++
 		}
-
-		locations[writeIndex] = curr_loc
-		writeIndex++
 	}
-	locations = locations[:writeIndex]
 
-	return locations
+	return locations[:writeIndex]
 }
 
-func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]map[string]string) []Meter {
+func GenerateMeters(params *Params, configMeteo []MeteoRecord, zones map[string]map[string]string) []Meter {
 	var locations = getLocations(params.locationsFile, params.metersNumber)
 
 	var houseSurfaceChances = map[string]float64{"20": 0.25, "50": 0.25, "70": 0.25, "100": 0.25}
 	var consoTypeChances = map[string]float64{"elec": 0.25, "gas": 0.75}
 
-	var meterList = make([]Meter, 0)
+	var meterList = []Meter{}
 	var curr_id uint64 = 0
 
 	// Go forwoard until the startID (ignoring the firsts locations)
 	for curr_id < params.firstID {
 		var city = locations[0]
 		var dec = params.firstID - curr_id
-		if city.Pop < params.firstID-curr_id {
-			dec = city.Pop
-		}
-
-		city.Pop -= dec
-		curr_id += dec
-
-		if city.Pop <= 0 {
+		if city.Pop <= dec {
+			curr_id += city.Pop
 			locations = locations[1:]
+		} else {
+			city.Pop -= dec
+			curr_id += dec
 		}
 	}
 
 	// Compute these meters (between startID and lastID)
-	var cityMeteoCenters []*MeteoRecord
-	var metersCities = make(map[*location]*City)
 	var lastCity *location
 	var city = &locations[0]
 	locations = locations[1:]
@@ -175,6 +149,8 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 	for ; curr_id < params.lastID; curr_id++ {
 		var meter Meter
 		meter.vid = curr_id
+
+		var metersCities = make(map[*location]*City)
 
 		// region climat
 		if metersCities[city] == nil {
@@ -201,9 +177,11 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 			meter.lng = rand.NormFloat64()*city.radius*0.00449157829 + city.Lng // 360/40075 = 0.00898315658 ( 360° / Earth circumference (equator) in km ) ÷2 to obtain a good standard dev
 
 			if params.temp {
+				var cityMeteoCenters []MeteoRecord
+
 				// If changed city, and cityMeteoCenters not already = Array.from(configMeteo.values());
 				if lastCity != city && !(lastCity != nil && lastCity.Pop <= 1 && city.Pop <= 1) {
-					cityMeteoCenters = make([]*MeteoRecord, 0)
+					cityMeteoCenters = []MeteoRecord{}
 
 					if city.Pop >= 2 {
 						// compute city's nearest meteo centers (only for cities of 2 or more meters)
@@ -212,7 +190,7 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 						for _, thisConfMeteo := range configMeteo {
 							if distance(city.Lat, city.Lng, thisConfMeteo.Lat, thisConfMeteo.Lng) < 1 {
 								// ignore far data (data from more than 1°Lat/lng distance)
-								cityMeteoCenters = append(cityMeteoCenters, &thisConfMeteo)
+								cityMeteoCenters = append(cityMeteoCenters, thisConfMeteo)
 							}
 						}
 
@@ -222,7 +200,7 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 				if len(cityMeteoCenters) <= 0 {
 					// Add all
 					for _, conf := range configMeteo {
-						cityMeteoCenters = append(cityMeteoCenters, &conf)
+						cityMeteoCenters = append(cityMeteoCenters, conf)
 					}
 				}
 
@@ -244,7 +222,7 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 				var totalCoefs float64
 				for i := int(math.Max(5, float64(len(cityMeteoCenters)))) - 1; i >= 0; i-- {
 					var coef = 1 / (distance(meter.lat, meter.lng, cityMeteoCenters[i].Lat, cityMeteoCenters[i].Lng) + 0.0001)
-					meteoCoefs[cityMeteoCenters[i]] = coef
+					meteoCoefs[&cityMeteoCenters[i]] = coef
 					totalCoefs += coef
 				}
 
@@ -252,6 +230,7 @@ func GenerateMeters(params Params, configMeteo []MeteoRecord, zones map[string]m
 				for key := range meteoCoefs {
 					meteoCoefs[key] /= totalCoefs
 				}
+				meter.meteoCoefs = meteoCoefs
 			}
 		}
 

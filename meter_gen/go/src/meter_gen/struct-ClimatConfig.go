@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-28
+ * @Last Modified time: 2017-08-02
 **/
 
 package meter_gen
@@ -53,7 +53,7 @@ func GetClimatConfig(climatFilePath string) ClimatConfig {
 
 	var ret ClimatConfig
 	ret.climats = configFile.Climats
-	ret.zones = make(map[string]map[string]string)
+	ret.zones = map[string]map[string]string{}
 
 	for countryName, cMap := range configFile.ClimatsZones {
 		ret.zones[countryName] = make(map[string]string)
@@ -67,6 +67,6 @@ func GetClimatConfig(climatFilePath string) ClimatConfig {
 	return ret
 }
 
-func (this *ClimatConfig) GetCoefsFor(country string, region string, season string) Coefs {
+func (this *ClimatConfig) GetCoefsFor(country, region, season string) Coefs {
 	return this.climats[this.zones[country][region]][season]
 }

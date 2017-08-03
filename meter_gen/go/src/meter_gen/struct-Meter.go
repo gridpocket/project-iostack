@@ -5,33 +5,31 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-01
+ * @Last Modified time: 2017-08-03
 **/
 
 package meter_gen
 
-import (
-	"fmt"
-	"time"
-)
+import "fmt"
 
 type Meter struct {
-	vid       uint64
-	index     uint64
-	index_op  uint64
-	index_p   uint64
-	consoType string
-	surface   string
-	lat       float64
-	lng       float64
-	city      *City
-	temp      float64
+	vid        uint64
+	index      uint64
+	index_op   uint64
+	index_p    uint64
+	consoType  string
+	surface    string
+	lat        float64
+	lng        float64
+	city       *City
+	temp       float64
+	meteoCoefs map[*MeteoRecord]float64
 }
 
-func (this Meter) toString(date time.Time, printsLocation, printsTemp bool) string {
+func (this *Meter) toString(formattedDate string, printsLocation, printsTemp bool) string {
 	var text = fmt.Sprintf("METER%06d,%s,%v,%v,%v,%s,%s",
 		this.vid,
-		date.Format(time.RFC3339),
+		formattedDate,
 		this.index,
 		this.index_op,
 		this.index_p,

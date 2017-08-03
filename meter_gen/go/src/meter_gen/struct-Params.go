@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-31
+ * @Last Modified time: 2017-08-02
 **/
 
 package meter_gen
@@ -40,7 +40,7 @@ type Params struct {
 	debug            bool
 }
 
-func (p Params) String() string {
+func (p *Params) String() string {
 	var nbDates uint64 = uint64(p.lastDate.Unix()-p.firstDate.Unix()) / uint64(p.interval.Seconds())
 	var nbData uint64 = nbDates * (p.lastID - p.firstID)
 	var nbDataTotal uint64 = nbDates * p.metersNumber
