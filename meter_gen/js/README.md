@@ -5,8 +5,8 @@ All data (indexes, temperature, locations) are generated using random and statis
 The application needs the following paramenters:
 
 - -metersNumber [integer]
-- -beginDate [yyyy/mm/dd as string]
-- -endDate [yyyy/mm/dd as string]
+- -firstDate [YYYY-MM-DDTHH:mm as string]
+- -lastDate [YYYY-MM-DDTHH:mm as string]
 - -interval [integer]
 - -consumptionsFile [.json file]
 - -climatFile [.json file]
@@ -17,7 +17,7 @@ The application accepts the following options:
 - -config [.json file]
 - -metersType ['elec'/'electric'/'gas'/'mix'/'mixed']
 - -maxFileSize [size]
-- -startID [integer]
+- -firstID [integer]
 - -lastID [integer]
 - -temp [boolean]
 - -meteoFile [file]
@@ -31,26 +31,16 @@ The parameters and options can be set in the command line, or in a json config f
 
 # File Structure
 ```
-meter_gen/                   // top folder
+meter_gen/js/               // top folder
     -     meter_gen.js           // Meter gen application script
+    -     defaultconfig.json     // Default configuration, inherited by execution config and command line
+
     -     package.json           // NPM package information
+    -     compile.sh             // Automated script to install npm package
+
     -     usageMessage.txt       // How to use Meter gen (needed by meter_gen.js, do not move)
     -     README.md              // This file
-
-    -     configs/               // folder containing sample configuration files 
-            -     climats.json       // sample climats config file
-            -     consumptions.json  // sample consumptions config file
-            -     locations.json     // sample locations config file
-            -     meteoData.json     // sample meteo config file
-
-    -     workingTest/           // folder containing sample script using meter_gen
-              -         ...      //    maily used as functional test
-
-    -     statistics/            // folder containing sample scripts using meter_gen
-            -        ...         //    mainly used to generate statistics (performance and data realistics)
 ```
-
-The very important files to keep for meter_gen to work are `meter_gen.js`, `package.json` and `usageMessage.txt`.
 
 # Requirement
 NodeJS "moment" version 2.11.1 and up,  
@@ -58,8 +48,10 @@ NodeJS "randgen" version 0.1.0 and up
 
 ## Installation
 ```sh
-# in the folder containing meter_gen.js
-npm install
+sh path/to/meter_gen/js/compile.sh
+
+# or if you are in the js folder
+sh compile.sh
 ```
 
 # Execution
@@ -96,14 +88,14 @@ Note that a `./config.json` file should not exists to get the follwing results
 # 1 data each hour (60minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
 # Generate all into files names {year}-{month}-{day}_{index}.csv ('./2016-01-01_1.csv' to './2017-12-31_42.csv');
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
-node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
+node ./meter_gen.js -metersNumber 1000 -firstDate "2016/01/01" -lastDate "2017/12/31" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
 
 # Generating for 1000 meters in houses not using electric heater ('gas'), only the meters 250 till 499,
 # 2 data each hour (30minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
 # Generate all into multiples 1MB files that will be located into ./out/ folder, files named {year}-{index}.csv (2016-1.csv 2016-2.csv ... 2017-1.csv)
 # adding locations and temperatures to generated file
-node ./meter_gen.js -metersNumber 1000 -beginDate "2016/01/01" -endDate "2017/12/31" -interval 30 -metersType 'gas' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' \
-	-maxFileSize 1M -startID 250 -lastID 500 -location -temp -meteoFile './configs/meteoData.json' -out './out/%Y-%N.csv'
+node ./meter_gen.js -metersNumber 1000 -firstDate "2016/01/01" -lastDate "2017/12/31" -interval 30 -metersType 'gas' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' \
+	-maxFileSize 1M -firstID 250 -lastID 500 -location -temp -meteoFile './configs/meteoData.json' -out './out/%Y-%N.csv'
 ```
 
 ### Examples using config file
@@ -111,8 +103,8 @@ Config file `./config.json`:
 
 ```json
 {	"metersNumber":1000,
-	"beginDate":"2016/02/01",
-	"endDate":"2016/05/01",
+	"firstDate":"2016/02/01",
+	"lastDate":"2016/05/01",
 	"interval": 120, // each meter will generate 1 data every this interval in minutes of time (here 2h)
 	"metersType": "electric", // only generate data for meters in houses using elecrtical heat
 	"consumptionsFile": "./configs/consumptions.json",
@@ -141,7 +133,7 @@ node ./meter_gen.js
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
 # adding locations and temperatures to generated file (meteoFile is defined in config.json)
 # not printing progressing status to console (-debug false overriding)
-node ./meter_gen.js -metersNumber 1234 -startID 500 -location -temp -debug false
+node ./meter_gen.js -metersNumber 1234 -firstID 500 -location -temp -debug false
 
 # Generate data not using ./config.json but ./anotherConfig.json
 node ./meter_gen.js -config './anotherConfig.json'
@@ -152,20 +144,20 @@ node ./meter_gen.js -config './anotherConfig.json'
 Row sample:
 
 ```csv
-date,index,sumHC,sumHP,type,vid,size,temp,city,region,lat,lng
-2016-02-01T00:00:00+01:00,255.8944154089721,0.2558944154089721,0,elec,METER000054,50,6.72,Paris,75,48.848158,2.327835
-2016-02-01T00:00:00+01:00,215.99777334278065,0.21599777334278064,0,elec,METER000053,20,2.77,Chambéry,73,45.576691,5.944346
-2016-02-01T00:00:00+01:00,380.5763987238543,0.3805763987238543,0,elec,METER000052,70,6.18,Le Mans,72,47.962022,0.198747
+vid, date,index,sumHC,sumHP,type,size,temp,city,region,lat,lng
+METER000000,2016-01-01T00:00:00+01:00,40.54,0.04054,0,gas,50,0.49,Ambérieu-en-Bugey,1,45.936562,5.366017
+METER000647,2016-01-01T00:00:00+01:00,187.88,0.18788,0,elec,70,3.30,Paris,75,48.825463,2.330183
+METER000999,2016-01-01T00:00:00+01:00,145.97,0.14597,0,elec,100,7.05,Bastia,2B,42.701160,9.445350
 ...
 ```
 
 as a Table:
 
-| date | index | sumHC | sumHP | type | vid | size | temp | city | region | lat | lng |
-| ---- | ----- | ----- | ----- | ---- | --- | ---- | ---- | ---- | ------ | --- | ---- |
-| 2016-02-01T00:00:00+01:00 | 255.894 | 0.255 | 0 | elec | METER000054 | 50 | 6.72 | Paris    | 75 | 48.848158 | 2.327835 |
-| 2016-02-01T00:00:00+01:00 | 215.997 | 0.215 | 0 | elec | METER000053 | 20 | 2.77 | Chambéry | 73 | 45.576691 | 5.944346 |
-| 2016-02-01T00:00:00+01:00 | 380.576 | 0.380 | 0 | elec | METER000052 | 70 | 6.18 | Le Mans  | 72 | 47.962022 | 0.198747 |
+| vid | date | index | sumHC | sumHP | type | size | temp | city | region | lat | lng |
+| --- | ---- | ----- | ----- | ----- | ---- | ---- | ---- | ---- | ------ | --- | --- |
+| METER000000 | 2016-01-01T00:00:00+01:00 | 40.54 | 0.04054 | 0 | gas | 50 | 0.49 | Ambérieu-en-Bugey | 1 | 45.936562 | 5.366017
+| METER000647 | 2016-01-01T00:00:00+01:00 | 187.88 | 0.18788 | 0 | elec | 70 | 3.30 | Paris | 75 | 48.825463 | 2.330183
+| METER000999 | 2016-01-01T00:00:00+01:00 | 145.97 | 0.14597 | 0 | elec | 100 | 7.05 | Bastia | 2B | 42.701160 | 9.445350
 
 # See the Wiki for more information
 
@@ -178,5 +170,5 @@ Created by GridPocket SAS, for IOStack project
 Email contact@gridpocket.com for more information.
 
 Contributors : Guillaume Pilot, Filip Gluszak, César Carles, Nathaël Noguès  
-Last Modified time: 2017-06-21  
+Last Modified time: 2017-08-03  
 Last Modified by:   Nathaël Noguès  
