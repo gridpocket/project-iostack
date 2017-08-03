@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-31
+ * @Last Modified time: 2017-08-01
 **/
 
 package meter_gen
@@ -26,13 +26,13 @@ func GetParameters(args []string) Params {
 	}
 
 	var argsMap = argsToMap(args)
-	param, errCount := loadConfig(argsMap)
+	params, errCount := loadConfig(argsMap)
 	if errCount > 0 {
 		fmt.Println(errCount, "errors found.")
 		fmt.Println("Type meter_gen -h to see how to use")
 		os.Exit(-2) // parameters initialisation error
 	}
-	return param
+	return params
 }
 
 func printHelp() {
@@ -79,7 +79,7 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	paramsMap, errors := loadConfigRecursive(argsMap, 0, make([]string, 0))
 	fmt.Println("Loaded config from command line")
 
-	var param Params
+	var params Params
 	const dateFormat = "2006-01-02T03:04"
 
 	// Check missing not optional parameters here
@@ -91,8 +91,8 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	}
 
 	// Set default optional values in Params
-	param.out = "./%Y-%M-%D_%N.csv"
-	param.metersType = TYPE_MIX
+	params.out = "./%Y-%M-%D_%N.csv"
+	params.metersType = TYPE_MIX
 
 	// Importing parameters to Params object and checking format and values
 	var err error
@@ -100,23 +100,23 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	for key, value := range paramsMap {
 		switch key {
 		case "metersNumber": // uint64
-			param.metersNumber, err = strconv.ParseUint(value, 10, 64)
+			params.metersNumber, err = strconv.ParseUint(value, 10, 64)
 
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not a positive integer\n", key, value)
 				errors++
-			} else if param.metersNumber <= 0 {
+			} else if params.metersNumber <= 0 {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 1\n", key, value)
 				errors++
 			}
 		case "beginDate", "firstDate": // string: 'YYYY-MM-DDTHH:mm' > time.Time
-			param.firstDate, err = time.Parse(dateFormat, value)
+			params.firstDate, err = time.Parse(dateFormat, value)
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY-MM-DDTHH:mm'\n", key, value)
 				errors++
 			}
 		case "endDate", "lastDate": // string: 'YYYY-MM-DDTHH:mm' > time.Time
-			param.lastDate, err = time.Parse(dateFormat, value)
+			params.lastDate, err = time.Parse(dateFormat, value)
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not in format 'YYYY-MM-DDTHH:mm'\n", key, value)
 				errors++
@@ -132,40 +132,40 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 1\n", key, value)
 				errors++
 			} else {
-				param.interval = time.Duration(interval) * time.Minute
+				params.interval = time.Duration(interval) * time.Minute
 			}
 		case "metersType": // string > TYPE_xxx
 			if value[:3] == "mix" {
-				param.metersType = TYPE_MIX
+				params.metersType = TYPE_MIX
 			} else if value[:3] == "ele" {
-				param.metersType = TYPE_ELE
+				params.metersType = TYPE_ELE
 			} else if value[:3] == "gas" {
-				param.metersType = TYPE_GAS
+				params.metersType = TYPE_GAS
 			} else {
 				fmt.Printf(ERR_MSG_BEG+"is neither 'mix', 'elec' nor 'gas'\n", key, value)
 				errors++
 			}
 		case "maxFileSize": // string: [1-9][0-9]*[obkmg] > uint64
 			var unite = strings.ToLower(value)[len(value)-1]
-			param.maxFileSize, err = strconv.ParseUint(value[:len(value)-1], 10, 64)
+			params.maxFileSize, err = strconv.ParseUint(value[:len(value)-1], 10, 64)
 
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not a positive integer followed by 'o'/'B', 'k', 'M' or 'G'\n", key, value)
 				errors++
-			} else if param.maxFileSize <= 0 {
+			} else if params.maxFileSize <= 0 {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 1B\n", key, value)
 				errors++
 			}
 
 			switch unite {
 			case 'g':
-				param.maxFileSize *= 1024 // gigabyte
+				params.maxFileSize *= 1024 // gigabyte
 				fallthrough
 			case 'm':
-				param.maxFileSize *= 1024 // megabyte
+				params.maxFileSize *= 1024 // megabyte
 				fallthrough
 			case 'k':
-				param.maxFileSize *= 1024 // kilobyte
+				params.maxFileSize *= 1024 // kilobyte
 				fallthrough
 			case 'o', 'b': // byte
 				/* nothing */
@@ -174,30 +174,30 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 				errors++
 			}
 		case "startID", "firstID": // uint64
-			param.firstID, err = strconv.ParseUint(value, 10, 64)
+			params.firstID, err = strconv.ParseUint(value, 10, 64)
 
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not a positive integer\n", key, value)
 				errors++
-			} else if param.firstID < 0 {
+			} else if params.firstID < 0 {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 0\n", key, value)
 				errors++
 			}
 		case "lastID": // uint64
-			param.lastID, err = strconv.ParseUint(value, 10, 64)
+			params.lastID, err = strconv.ParseUint(value, 10, 64)
 
 			if err != nil {
 				fmt.Printf(ERR_MSG_BEG+"is not a positive integer\n", key, value)
 				errors++
-			} else if param.lastID <= 0 {
+			} else if params.lastID <= 0 {
 				fmt.Printf(ERR_MSG_BEG+"is lower than 1\n", key, value)
 				errors++
 			}
 		case "temp": // bool
 			if value == "" {
-				param.temp = true
+				params.temp = true
 			} else {
-				param.temp, err = strconv.ParseBool(strings.ToLower(value))
+				params.temp, err = strconv.ParseBool(strings.ToLower(value))
 				if err != nil {
 					fmt.Printf(ERR_MSG_BEG+"is not a boolean (true/t/1, false/f/0)\n", key, value)
 					errors++
@@ -205,29 +205,29 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 			}
 		case "location": // bool
 			if value == "" {
-				param.location = true
+				params.location = true
 			} else {
-				param.location, err = strconv.ParseBool(strings.ToLower(value))
+				params.location, err = strconv.ParseBool(strings.ToLower(value))
 				if err != nil {
 					fmt.Printf(ERR_MSG_BEG+"is not a boolean (true/t/1, false/f/0)\n", key, value)
 					errors++
 				}
 			}
 		case "consumptionsFile": // string
-			param.consumptionsFile = value
+			params.consumptionsFile = value
 		case "climatFile": // string
-			param.climatFile = value
+			params.climatFile = value
 		case "meteoFile": // string
-			param.meteoFile = value
+			params.meteoFile = value
 		case "locationsFile": // string
-			param.locationsFile = value
+			params.locationsFile = value
 		case "out": // string
-			param.out = value
+			params.out = value
 		case "debug": // bool
 			if value == "" {
-				param.debug = true // bool
+				params.debug = true // bool
 			} else {
-				param.debug, err = strconv.ParseBool(strings.ToLower(value))
+				params.debug, err = strconv.ParseBool(strings.ToLower(value))
 				if err != nil {
 					fmt.Printf(ERR_MSG_BEG+"is not a boolean (true/t/1, false/f/0)\n", key, value)
 					errors++
@@ -240,41 +240,51 @@ func loadConfig(argsMap map[string]string) (Params, int) {
 	}
 
 	// Set default optional values in Params
-	if param.out[len(param.out)-1] == '/' {
-		param.out += "%Y-%M-%D_%N.csv"
+	if params.out[len(params.out)-1] == '/' {
+		params.out += "%Y-%M-%D_%N.csv"
 	}
-	if param.lastID == 0 {
-		param.lastID = param.metersNumber
+
+	if params.lastID == 0 {
+		params.lastID = params.metersNumber
 	}
 
 	// Check parameters compatibility
-	if !param.lastDate.After(param.firstDate) {
-		fmt.Printf(ERR_MSG_BEG+"should be before lastDate ('%v')\n", "firstDate", param.lastDate, param.firstDate)
+	if !params.lastDate.After(params.firstDate) {
+		fmt.Printf(ERR_MSG_BEG+"should be before lastDate ('%v')\n", "firstDate", params.lastDate, params.firstDate)
 		errors++
 	}
-	if param.firstID >= param.metersNumber {
-		fmt.Printf(ERR_MSG_BEG+"should be lower than metersNumber ('%v')\n", "lastID", param.firstID, param.metersNumber)
+	if params.firstID >= params.metersNumber {
+		fmt.Printf(ERR_MSG_BEG+"should be lower than metersNumber ('%v')\n", "lastID", params.firstID, params.metersNumber)
 		errors++
 	}
-	if param.lastID > param.metersNumber {
-		fmt.Printf(ERR_MSG_BEG+"should be lower or equal than metersNumber ('%v')\n", "lastID", param.lastID, param.metersNumber)
+	if params.lastID > params.metersNumber {
+		fmt.Printf(ERR_MSG_BEG+"should be lower or equal than metersNumber ('%v')\n", "lastID", params.lastID, params.metersNumber)
 		errors++
 	}
-	if param.lastID < param.firstID {
-		fmt.Printf(ERR_MSG_BEG+"should be lower than lastID ('%v')\n", "firstID", param.firstID, param.lastID)
+	if params.lastID < params.firstID {
+		fmt.Printf(ERR_MSG_BEG+"should be lower than lastID ('%v')\n", "firstID", params.firstID, params.lastID)
 		errors++
 	}
-	if param.maxFileSize > 0 && !strings.Contains(param.out, "%N") {
-		fmt.Printf(ERR_MSG_BEG+"need to contains '%%N' when maxFileSize ('%v') > 0 (to be replaced by file number during execution)", "out", param.out, param.maxFileSize)
+	if params.maxFileSize > 0 && !strings.Contains(params.out, "%N") {
+		fmt.Printf(ERR_MSG_BEG+"need to contains '%%N' when maxFileSize ('%v') > 0 (to be replaced by file number during execution)", "out", params.out, params.maxFileSize)
 		errors++
 	}
 
-	return param, errors
+	params.out = strings.Replace(params.out, "%Y", "%04[1]d", -1)
+	params.out = strings.Replace(params.out, "%y", "%02[2]d", -1)
+	params.out = strings.Replace(params.out, "%M", "%02[3]d", -1)
+	params.out = strings.Replace(params.out, "%D", "%02[4]d", -1)
+	params.out = strings.Replace(params.out, "%d", "%02[5]d", -1)
+	params.out = strings.Replace(params.out, "%h", "%02[6]d", -1)
+	params.out = strings.Replace(params.out, "%m", "%02[7]d", -1)
+	params.out = strings.Replace(params.out, "%N", "%[8]s", -1)
+
+	return params, errors
 }
 
 func loadConfigRecursive(argsMap map[string]string, errors int, recursive []string) (map[string]string, int) {
 	const CONFIG_KEY string = "config"
-	var param = make(map[string]string)
+	var params = make(map[string]string)
 
 	if _, isConfig := argsMap[CONFIG_KEY]; !isConfig {
 		// If no config file specified, and there is a ./config.json
@@ -326,15 +336,15 @@ func loadConfigRecursive(argsMap map[string]string, errors int, recursive []stri
 			recursive = append(recursive, configPath)
 
 			// Get herited parameters
-			param, errors = loadConfigRecursive(jsonConfig, 0, recursive)
+			params, errors = loadConfigRecursive(jsonConfig, 0, recursive)
 			fmt.Println("Loaded config from", configPath)
 		}
 	}
 
 	// Add new and rewrited parameters
 	for key := range argsMap {
-		param[key] = argsMap[key]
+		params[key] = argsMap[key]
 	}
 
-	return param, errors
+	return params, errors
 }
