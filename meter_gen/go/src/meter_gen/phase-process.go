@@ -180,7 +180,7 @@ func computeTemperature(meteoCoefs map[*MeteoRecord]float64, hoursSinceMid, mont
 	var min2 float64 = 0 // next month maximum & minimum temperatures
 	var max2 float64 = 0
 
-	var month1 = int(months)                // current month
+	var month1 = int(months) - 1            // current month
 	var month2 = (month1 + 1) % 12          // next month
 	var progress = months - float64(month1) // % of current month elapsed
 
