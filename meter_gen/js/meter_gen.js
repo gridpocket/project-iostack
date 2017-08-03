@@ -10,7 +10,7 @@
  *		 GridPocket SAS
  *
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-07-31
+ * @Last Modified time: 2017-08-03
  *
  * Usage :
  *	  node meter_gen (options...)
@@ -18,7 +18,7 @@
  *	  node --expose-gc meter_gen (options...)
  *
  * Example usage:
- *	 node meter_gen.js -metersNumber 10 -beginDate '2016/01/01' -endDate '2016/12/31' -interval 60 -metersType elec -location
+ *	 node meter_gen.js -metersNumber 10 -firstDate '2016/01/01' -lastDate '2016/12/31' -interval 60 -metersType elec -location
 **/
 
 // jshint esversion: 6, boss: true
@@ -42,6 +42,7 @@ var curFileSize = 0;
 var fileNb = 1;
 var totalFileSize = 0;
 var totalFileCount = 0;
+const INPUT_DATE_FORMAT = 'YYYY-MM-DDTHH:mm';
 
 // Get meter_gen call parameters
 const params = getParameters(process.argv.slice(2));
@@ -95,7 +96,7 @@ function getFile(params, fileName, createIfNotExists=true) {
 	openFiles.set(fileName, fileDescriptor);
 	curFileSize = 0;
 
-	const firstLine = ['vid, date,index,sumHC,sumHP,type,size'];
+	const firstLine = ['vid,date,index,sumHC,sumHP,type,size'];
 
 	if(params.temp)
 		firstLine.push('temp');
@@ -138,8 +139,8 @@ function closeFile(fileDescriptor, fileName) {
 function loadArgs(map, recursive=[]) {
 	let params = {
 		metersNumber: null,
-		beginDate: null,
-		endDate: null,
+		firstDate: null,
+		lastDate: null,
 		interval: null,
 		metersType: null,
 		maxFileSize: null,
@@ -195,15 +196,28 @@ function loadArgs(map, recursive=[]) {
 			params[key] = map.get(key);
 	});
 	map.forEach((value, key) => {
-		if(params.hasOwnProperty(key))
-			params[key] = value;
-		else if(key === 'startID') {
-			console.error('WARNING: Deprecated use of "startID", please use "firstID" instead.');
-			params.firstID = value;
-		}
-		else if(key !== 'config') {
-			console.error('ERROR: Unrecognised option "'+key+'"');
-			hasErrors = true;
+		switch (key) {
+			case 'startID':
+				console.error('WARNING: Deprecated use of "startID", please use "firstID" instead.');
+				params.firstID = value;
+				break;
+			case 'beginDate':
+				console.error('WARNING: Deprecated use of "beginDate", please use "firstDate" instead.');
+				params.firstDate = value;
+				break;
+			case 'endDate':
+				console.error('WARNING: Deprecated use of "endDate", please use "lastDate" instead.');
+				params.lastDate = value;
+				break;
+			case 'config':
+				break;
+			default:
+				if(params.hasOwnProperty(key))
+					params[key] = value;
+				else {
+					console.error('ERROR: Unrecognised option "'+key+'"');
+					hasErrors = true;
+				}
 		}
 	});
 
@@ -303,25 +317,25 @@ function getParameters(args) {
 	}
 
 	// Date
-	if(params.beginDate === null || params.endDate === null) {
-		console.error('ERROR: beginDate and endDate need to be specified');
+	if(params.firstDate === null || params.lastDate === null) {
+		console.error('ERROR: firstDate and lastDate need to be specified');
 		errNb++;
-	} else if(params.beginDate === '' || params.endDate === '') {
-		console.error('ERROR: beginDate and endDate need an argument each');
+	} else if(params.firstDate === '' || params.lastDate === '') {
+		console.error('ERROR: firstDate and lastDate need an argument each');
 		errNb++;
-	} else if(!moment(params.beginDate, 'YYYY/MM/DD', true).isValid() || !moment(params.endDate, 'YYYY/MM/DD', true).isValid()) {
-		console.error('ERROR: Check your beginDate and endDate, should be in format yyyy/mm/dd (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
+	} else if(!moment(params.firstDate, INPUT_DATE_FORMAT, true).isValid() || !moment(params.lastDate, INPUT_DATE_FORMAT, true).isValid()) {
+		console.error('ERROR: Check your firstDate and lastDate, should be in format '+INPUT_DATE_FORMAT+' (was firstDate:"'+params.firstDate+'", lastDate:"'+params.lastDate+'")');
 		errNb++;
 	} else {
-		const beginDate = moment(params.beginDate, 'YYYY/MM/DD');
-		const endDate = moment(params.endDate, 'YYYY/MM/DD');
+		const firstDate = moment(params.firstDate, INPUT_DATE_FORMAT);
+		const lastDate = moment(params.lastDate, INPUT_DATE_FORMAT);
 
-		if(endDate < beginDate) {
-			console.error('ERROR: endDate should be same or after beginDate (was beginDate:"'+params.beginDate+'", endDate:"'+params.endDate+'")');
+		if(lastDate < firstDate) {
+			console.error('ERROR: lastDate should be same or after firstDate (was firstDate:"'+params.firstDate+'", lastDate:"'+params.lastDate+'")');
 			errNb++;
 		} else {
-			params.beginDate = beginDate;
-			params.endDate = endDate;
+			params.firstDate = firstDate;
+			params.lastDate = lastDate;
 		}
 	}
 
@@ -697,7 +711,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	let fileName;
 
 	let progress = 0;
-	const progressMax = 1+ (params.endDate.valueOf() - params.beginDate.valueOf())/1000 /60 /params.interval; // compute number of loops needed
+	const progressMax = 1+ (params.lastDate.valueOf() - params.firstDate.valueOf())/1000 /60 /params.interval; // compute number of loops needed
 	if(params.debug) printProgress('data', 0, progressMax);
 
 	const getNewFileName = function(d) {
@@ -712,7 +726,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 	};
 
 
-	for(let d=moment(params.beginDate); d<params.endDate; d.add(params.interval, 'minutes')) { // For each period of time
+	for(let d=moment(params.firstDate); d<params.lastDate; d.add(params.interval, 'minutes')) { // For each period of time
 		minutesSinceMid += params.interval;
 
 		if(minutesSinceMid >= 24*60) { // next day
