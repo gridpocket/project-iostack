@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-08-01
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-03
+ * @Last Modified time: 2017-08-17 13:56:21
 **/
 
 package meter_gen
@@ -39,6 +39,11 @@ var totalWriten uint64
 
 func GenerateDataLoop(params *Params, configClimat *ClimatConfig, configConsum *ConsumConfig, metersTab []Meter, configMeteo []MeteoRecord) {
 	defer closeAll() // close all files when finished or in case of error
+
+	for a, b := range configConsum.elec {
+		fmt.Println(a, ": ", b)
+	}
+	fmt.Println("4...")
 
 	headerLine = "vid,date,index,sumHC,sumHP,type,size"
 	if params.temp {
@@ -124,8 +129,8 @@ func GenerateDataLoop(params *Params, configClimat *ClimatConfig, configConsum *
 
 			var subClimat = configClimat.climats[meter.city.climat][season]
 
-			var avg = float64(subConfig.avg) * float64(subClimat.RatioAvg)
-			var stdev = float64(subConfig.stdev) * float64(subClimat.RatioStddev)
+			var avg = float64(subConfig.avg) * subClimat.RatioAvg
+			var stdev = float64(subConfig.stdev) * subClimat.RatioStddev
 
 			// curr conso = random following avg and stdev, as consumption per interval (and not consumption per day like in data file)
 			var curr_conso = (rand.NormFloat64()*stdev + avg) / (1440 / params.interval.Minutes()) // 1440 = nbMinutes per day
@@ -180,9 +185,9 @@ func computeTemperature(meteoCoefs map[*MeteoRecord]float64, hoursSinceMid, mont
 	var min2 float64 = 0 // next month maximum & minimum temperatures
 	var max2 float64 = 0
 
-	var month1 = int(months) - 1            // current month
-	var month2 = (month1 + 1) % 12          // next month
-	var progress = months - float64(month1) // % of current month elapsed
+	var month1 int = int(months) - 1                // current month
+	var month2 int = (month1 + 1) % 12              // next month
+	var progress float64 = months - float64(month1) // % of current month elapsed
 
 	for meteoRecord, meteoCoef := range meteoCoefs {
 		min1 += meteoCoef * meteoRecord.Min[month1]

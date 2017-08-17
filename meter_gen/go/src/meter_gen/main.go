@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-03
+ * @Last Modified time: 2017-08-17 13:56:19
  *
 **/
 
@@ -30,18 +30,30 @@ func Main(args []string) {
 	// Get configs needed to generate data
 	var configConsum = GetConsumConfig(params.consumptionsFile)
 
+	for a, b := range configConsum.elec {
+		fmt.Println(a, ": ", b)
+	}
+	fmt.Println("2...")
+
+	var afterLoadedConfigs int64
 	if params.debug {
-		var afterLoadedConfigs = time.Now().UnixNano()
+		afterLoadedConfigs = time.Now().UnixNano()
 		fmt.Printf("params: %.2fs\n", float64(afterLoadedConfigs-start)/float64(time.Second))
 	}
 
 	// Generate meters
 	var metersTab = GenerateMeters(&params, configMeteo, configClimat.zones)
 
+	var afterGeneratedMeters int64
 	if params.debug {
-		var afterGeneratedMeters = time.Now().UnixNano()
+		afterGeneratedMeters = time.Now().UnixNano()
 		fmt.Printf("meters: %.2fs\n", float64(afterGeneratedMeters-afterLoadedConfigs)/float64(time.Second))
 	}
+
+	for a, b := range configConsum.elec {
+		fmt.Println(a, ": ", b)
+	}
+	fmt.Println("3...")
 
 	// Generate data
 	GenerateDataLoop(&params, &configClimat, &configConsum, metersTab, configMeteo)

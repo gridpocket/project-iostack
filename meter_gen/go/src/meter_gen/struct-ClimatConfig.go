@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-13
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-02
+ * @Last Modified time: 2017-08-17 13:25:15
 **/
 
 package meter_gen
@@ -27,8 +27,8 @@ type ClimatConfig struct {
 }
 type Coefs struct {
 	// {"RatioAvg":0.66, "RatioStddev":1.24}
-	RatioAvg    float32 `json:"RatioAvg"`
-	RatioStddev float32 `json:"RatioStddev"`
+	RatioAvg    float64 `json:"RatioAvg"`
+	RatioStddev float64 `json:"RatioStddev"`
 }
 
 type jsonClimatConfig struct {
