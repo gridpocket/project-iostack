@@ -1,23 +1,21 @@
-Compile:
-	./compile.sh
-	    or
+Install:
 	sh compile.sh
 
 Usage:
-	./meter_gen (-config [configuration file]) (options...)
-        or
-    ./meter_gen [-h|-help]
+	sh meter_gen.sh -h|-help
+	  or
+	sh meter_gen.sh (-config [configuration file]) (options...)
 
 Needs:
 	'-metersNumber [integer]':
 		with 'integer' is 1 or more, represent the total number of meter all meter_gen processes will generate
 
-	'-firstDate [yyyy/mm/dd as string]':
-		The first date data will be generated at (basically at 00h00:00 of this date)
+	'-firstDate [YYYY-MM-DDTHH:mm as string]':
+		The first date data will be generated at this date
 
-	'-lastDate [yyyy/mm/dd as string]':
-		No data will be after this date (except the data at endDate at 00h00:00 if data should be generated at this exact time)
-		endDate should be after beginDate (or equal if you need only 1 data by meter)
+	'-lastDate [YYYY-MM-DDTHH:mm as string]':
+		No data will be after this date (if lastDate is exact same time as a data should be generated, it would be the time of the last created)
+		lastDate should be after firstDate (or equal if you need exactly 1 data by meter)
 
 	'-interval [integer]':
 		Specify the number of minutes between 2 data of the same meter.
@@ -34,10 +32,10 @@ Needs:
 
 Options:
 	'-config [.json file]':
-		specify a file that contains options (metersNumber, beginDate, endDate, interval, meterTypes and maybe others options)
+		specify a file that contains options (metersNumber, firstDate, lastDate, interval, meterTypes and maybe others options)
 		You can put -config and specify parameters or options; in this case, the value set in commandline will be taken.
 		The config file should be formatted as a JSON file, with keys are options names (without the '-'), and the values are the options parameters.
-		ex: {'metersNumber':42, 'beginDate':'2016/31/12', 'endDate':'2017/05/04', 'interval':30, 'meterTypes':'mixed', 'location': true}
+		ex: {'metersNumber':42, 'firstDate':'2016-12-31T00:00', 'lastDate':'2017-04-05T00:00', 'interval':30, 'meterTypes':'mixed', 'location': true}
 
 		by default, if a ./config.json file exists, it will be loaded as config file. If not, all arguments needs to be specified in command.
 
@@ -53,7 +51,7 @@ Options:
 	'-firstID [integer]':
 		with metersNumber > firstID >= 0, and firstID < lastID
 		Meters ID will start from the specified ID
-		Example: -firstID 30 > First generated meter ID will be METER00030, second will be METER00031 ...
+		Example: -firstID 30 > First ID will be METER00030, second will be METER00031 ...
 
 		if no firstID specified, starting with id 0
 
@@ -80,7 +78,7 @@ Options:
 		If temp option is enabled, -meteoFile should be set
 
 		This option increases execution time proportionally to meters number to generate (lastID - firstID),
-		can spent many time and potentially make Heap memory overflow error (depending on your machine, firstID and lastID options)
+		can spent many time and potentially make Javascript Heap memory overflow error (depending on your machine, firstID and lastID options)
 
 	'-meteoFile [.json file]': (useless if not -temp option)
 		Specity the path to the file containing meteo information
@@ -118,4 +116,4 @@ Options:
 		In this case, generated file names will be like './specifiedPath/%Y-%M-%D_%N.csv'.
 
 	'-help' or '-h':
-		print this text instead of generating data 
+		print this text instead of generating data
