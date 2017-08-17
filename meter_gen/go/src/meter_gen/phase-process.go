@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-08-01
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-17 13:56:21
+ * @Last Modified time: 2017-08-17 15:03:54
 **/
 
 package meter_gen
@@ -39,11 +39,6 @@ var totalWriten uint64
 
 func GenerateDataLoop(params *Params, configClimat *ClimatConfig, configConsum *ConsumConfig, metersTab []Meter, configMeteo []MeteoRecord) {
 	defer closeAll() // close all files when finished or in case of error
-
-	for a, b := range configConsum.elec {
-		fmt.Println(a, ": ", b)
-	}
-	fmt.Println("4...")
 
 	headerLine = "vid,date,index,sumHC,sumHP,type,size"
 	if params.temp {
@@ -122,25 +117,25 @@ func GenerateDataLoop(params *Params, configClimat *ClimatConfig, configConsum *
 		var writeName = fmt.Sprintf(fileName+"%[2]s", fileNb, "")
 
 		for _, meter := range metersTab {
-			var subConfig = configConsum.gas["s"+meter.surface][season][dayOfWeek][dayTime]
+			var subConfig = configConsum.Gas["s"+meter.surface][season][dayOfWeek][dayTime]
 			if meter.consoType == TYPE_ELE {
-				subConfig = configConsum.elec["s"+meter.surface][season][dayOfWeek][dayTime]
+				subConfig = configConsum.Elec["s"+meter.surface][season][dayOfWeek][dayTime]
 			}
 
 			var subClimat = configClimat.climats[meter.city.climat][season]
 
-			var avg = float64(subConfig.avg) * subClimat.RatioAvg
-			var stdev = float64(subConfig.stdev) * subClimat.RatioStddev
+			var avg = float64(subConfig.Avg) * subClimat.RatioAvg
+			var stdev = float64(subConfig.Stdev) * subClimat.RatioStddev
 
 			// curr conso = random following avg and stdev, as consumption per interval (and not consumption per day like in data file)
-			var curr_conso = (rand.NormFloat64()*stdev + avg) / (1440 / params.interval.Minutes()) // 1440 = nbMinutes per day
+			var curr_conso float64 = (rand.NormFloat64()*stdev + avg) / (1440 / params.interval.Minutes()) // 1440 = nbMinutes per day
 
 			// updating meter data
 			meter.index += uint64(curr_conso)
 			if hoursSinceMid >= 7 && hoursSinceMid <= 22 {
-				meter.index_p += uint64(curr_conso * 0.001) // convert to KWh
+				meter.index_p += uint64((curr_conso + 500) / 1000) // rounding and convert to KWh
 			} else {
-				meter.index_op += uint64(curr_conso * 0.001) // convert to KWh
+				meter.index_op += uint64((curr_conso + 500) / 1000) // rounding and convert to KWh
 			}
 
 			if params.temp {
