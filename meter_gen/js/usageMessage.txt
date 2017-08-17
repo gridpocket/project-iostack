@@ -1,7 +1,10 @@
+Install:
+	sh compile.sh
+
 Usage:
-	  node meter_gen (-config [configuration file]) (options...)
-        or
-      node -h|-help
+	sh meter_gen.sh -h|-help
+	  or
+	sh meter_gen.sh (-config [configuration file]) (options...)
 
 Needs:
 	'-metersNumber [integer]':
@@ -10,9 +13,9 @@ Needs:
 	'-firstDate [YYYY-MM-DDTHH:mm as string]':
 		The first date data will be generated at this date
 
-	'-lastDate [yyyy/mm/dd as string]':
-		No data will be after this date (except the data at endDate at 00h00:00 if data should be generated at this exact time)
-		endDate should be after beginDate (or equal if you need only 1 data by meter)
+	'-lastDate [YYYY-MM-DDTHH:mm as string]':
+		No data will be after this date (if lastDate is exact same time as a data should be generated, it would be the time of the last created)
+	lastDate should be after firstDate (or equal if you need exactly 1 data by meter)
 
 	'-interval [integer]':
 		Specify the number of minutes between 2 data of the same meter.
@@ -29,10 +32,10 @@ Needs:
 
 Options:
 	'-config [.json file]':
-		specify a file that contains options (metersNumber, beginDate, endDate, interval, meterTypes and maybe others options)
+		specify a file that contains options (metersNumber, firstDate, lastDate, interval, meterTypes and maybe others options)
 		You can put -config and specify parameters or options; in this case, the value set in commandline will be taken.
 		The config file should be formatted as a JSON file, with keys are options names (without the '-'), and the values are the options parameters.
-		ex: {'metersNumber':42, 'beginDate':'2016/31/12', 'endDate':'2017/05/04', 'interval':30, 'meterTypes':'mixed', 'location': true}
+		ex: {'metersNumber':42, 'firstDate':'2016-12-31T00:00', 'lastDate':'2017-04-05T00:00', 'interval':30, 'meterTypes':'mixed', 'location': true}
 
 		by default, if a ./config.json file exists, it will be loaded as config file. If not, all arguments needs to be specified in command.
 

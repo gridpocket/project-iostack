@@ -6,7 +6,7 @@
 # @Author: Nathaël Noguès
 # @Date:   2017-07-28
 # @Last Modified by:   Nathaël Noguès
-# @Last Modified time: 2017-07-31
+# @Last Modified time: 2017-08-17 11:58:24
 
 cd "`dirname \"$0\"`"
-sh ./statgen.sh 'node ../js/meter_gen.js'
+sh ./statgen.sh '../js/meter_gen.sh'
