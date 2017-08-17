@@ -6,7 +6,7 @@
 # @Author: Nathaël Noguès
 # @Date:   2017-04-14
 # @Last Modified by:   Nathaël Noguès
-# @Last Modified time: 2017-07-31
+# @Last Modified time: 2017-08-17 13:08:23
 
 cd "`dirname \"$0\"`"
-sh workingTest.sh "../go/meter_gen"
+sh workingTest.sh "../go/meter_gen.sh"

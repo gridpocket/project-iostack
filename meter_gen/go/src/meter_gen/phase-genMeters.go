@@ -5,7 +5,7 @@
  * @Author: Nathaël Noguès, GridPocket SAS
  * @Date:   2017-07-28
  * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-03
+ * @Last Modified time: 2017-08-17 13:25:00
 **/
 
 package meter_gen
@@ -221,7 +221,7 @@ func GenerateMeters(params *Params, configMeteo []MeteoRecord, zones map[string]
 				var meteoCoefs = make(map[*MeteoRecord]float64)
 				var totalCoefs float64
 				for i := int(math.Max(5, float64(len(cityMeteoCenters)))) - 1; i >= 0; i-- {
-					var coef = 1 / (distance(meter.lat, meter.lng, cityMeteoCenters[i].Lat, cityMeteoCenters[i].Lng) + 0.0001)
+					var coef float64 = float64(1 / (distance(meter.lat, meter.lng, cityMeteoCenters[i].Lat, cityMeteoCenters[i].Lng) + 0.0001))
 					meteoCoefs[&cityMeteoCenters[i]] = coef
 					totalCoefs += coef
 				}
