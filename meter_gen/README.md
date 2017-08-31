@@ -109,13 +109,13 @@ Note that a `./config.json` file should not exists to get the follwing results
 # 1 data each hour (60minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
 # Generate all into files names {year}-{month}-{day}_{index}.csv ('./2016-01-01_1.csv' to './2017-12-31_42.csv');
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
-sh meter_gen.sh -metersNumber 1000 -firstDate "2016/01/01" -lastDate "2017/12/31" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
+sh meter_gen.sh -metersNumber 1000 -firstDate "2016-01-01T00:00" -lastDate "2017-12-31T00:00" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
 
 # Generating for 1000 meters in houses not using electric heater ('gas'), only the meters 250 till 499,
 # 2 data each hour (30minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
 # Generate all into multiples 1MB files that will be located into ./out/ folder, files named {year}-{index}.csv (2016-1.csv 2016-2.csv ... 2017-1.csv)
 # adding locations and temperatures to generated file
-sh meter_gen.sh -metersNumber 1000 -firstDate "2016/01/01" -lastDate "2017/12/31" -interval 30 -metersType 'gas' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' \
+sh meter_gen.sh -metersNumber 1000 -firstDate "2016-01-01T00:00" -lastDate "2017-12-31T00:00" -interval 30 -metersType 'gas' -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' \
 	-maxFileSize 1M -firstID 250 -lastID 500 -location -temp -meteoFile './configs/meteoData.json' -out './out/%Y-%N.csv'
 ```
 
@@ -165,7 +165,7 @@ sh meter_gen.sh -config './anotherConfig.json'
 Row sample:
 
 ```csv
-vid, date,index,sumHC,sumHP,type,size,temp,city,region,lat,lng
+vid,date,index,sumHC,sumHP,type,size,temp,city,region,lat,lng
 METER000000,2016-01-01T00:00:00+01:00,40.54,0.04054,0,gas,50,0.49,Ambérieu-en-Bugey,1,45.936562,5.366017
 METER000647,2016-01-01T00:00:00+01:00,187.88,0.18788,0,elec,70,3.30,Paris,75,48.825463,2.330183
 METER000999,2016-01-01T00:00:00+01:00,145.97,0.14597,0,elec,100,7.05,Bastia,2B,42.701160,9.445350
