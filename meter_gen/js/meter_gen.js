@@ -9,8 +9,8 @@
  * @Authors : Guillaume PILOT, Dien Hoa TRUONG, Kevin FOUHETY, César CARLES, Nathaël NOGUÈS
  *		 GridPocket SAS
  *
- * @Last Modified by:   Nathaël Noguès
- * @Last Modified time: 2017-08-03
+ * @Last Modified by:   Romain Devalle
+ * @Last Modified time: 2017-12-29 10:43:58
  *
  * Usage :
  *	  node meter_gen (options...)
@@ -52,7 +52,8 @@ if(params.debug) console.timeEnd('init');
 
 // Generating Meters information
 if(params.debug) console.time('meters');
-const metersTab = generateMeters(params, configClimat.climatZone, configMeteo);
+const configProfil = JSON.parse(fs.readFileSync(params.profilsFile));
+const metersTab = generateMeters(params, configClimat.climatZone, configMeteo, configProfil);
 if(params.debug) console.timeEnd('meters');
 if(global.gc) gc();
 
@@ -149,6 +150,7 @@ function loadArgs(map, recursive=[]) {
 		temp: null,
 		location: null,
 		consumptionsFile: null,
+		profilsFile: null,
 		climatFile: null,
 		meteoFile: null,
 		locationsFile: null,
@@ -478,6 +480,11 @@ function getParameters(args) {
 		errNb++;
 	}
 
+	if (!params.profilsFile) {
+		console.error('ERROR: profilsFile need to be specified');
+		errNb++;
+	}
+
 	if(errNb > 0) {
 		console.error('\nType meter_gen -h to see how to use');
 		process.exit(-2); // Argument or Initialisation error
@@ -576,7 +583,7 @@ function getLocations(locationsFileName, totalPop) {
 
 //
 // Main Functions
-function generateMeters(params, climatZone, configMeteo) {
+function generateMeters(params, climatZone, configMeteo, configProfil) {
 	const locations = getLocations(params.locationsFile, params.metersNumber);
 	if(global.gc) gc(); // Because getLocation loading a file
 
@@ -584,7 +591,7 @@ function generateMeters(params, climatZone, configMeteo) {
 	// constants for execution
 	const sortByCoef = (a,b)=>b.coef-a.coef;
 	const houseSurfaceChances = {'20':0.25, '50':0.25, '70':0.25, '100':0.25};
-	const consoTypeChances = {'elec':0.25, 'gas':0.75};
+	const consoTypeChances = {'elec':0.40, 'gas':0.60};
 	// constants for execution
 	//
 
@@ -630,6 +637,8 @@ function generateMeters(params, climatZone, configMeteo) {
 			(params.metersType === 'mix')?chooseBetween(consoTypeChances):params.metersType, // consumption type
 			   chooseBetween(houseSurfaceChances) // home surface
 		];
+		meter.profil = Math.floor((Math.random() * Object.keys(configProfil).length) + 1);
+		meter.old = 0;
 		if(params.temp || params.location) {
 			// ÷2 (stddev should be radius/2)
 			const lat = randgen.rnorm(city.lat, city.radius*0.00450664730); // 360/39941 = 0.00901329460 ( 360° / Earth circumference (polar) in km ) ÷2 to obtain a good standard dev
@@ -749,13 +758,19 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 		}
 		const hoursSinceMid = minutesSinceMid/60;
 
-		let dayTime = 'Evening';
+		let dayTime = 'Endday';	// Endday (21h -> 00h)
 		if(hoursSinceMid <= 6)
 			dayTime = 'Night'; // Night (00h -> 06H)
 		else if(hoursSinceMid <=  9)
 			dayTime = 'Morning';  // Morning (06h -> 09h)
-		else if(hoursSinceMid <=  17)
-			dayTime = 'Day'; // Day (09h -> 17h)
+		else if(hoursSinceMid <= 12)
+			dayTime = 'Day';	// Day (09h -> 12h)
+		else if(hoursSinceMid <=  14)
+			dayTime = 'Midday'; // Midday (12h -> 14h)
+		else if(hoursSinceMid <= 17)
+			dayTime = 'Afternoon';	// Afternoon (14h -> 17h)
+		else if(hoursSinceMid <= 21)
+			dayTime = 'Evening';	// Evening (17h -> 21h)
 		/*else
 			dayTime = 'Evening';  // Evening(17h -> 23h59)
 		*/
@@ -776,10 +791,13 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 			//  surface = 's'+meter.houseType;
 			const subConfig = configConsum[meter.line[5]]['s'+meter.line[6]];
 
-			const avg = subConfig[season][dayOfWeek][dayTime].avg * configClimat.climats[meter.climat][season].RatioAvg;
-			const stdev = subConfig[season][dayOfWeek][dayTime].stddev * configClimat.climats[meter.climat][season].RatioStddev;
-			const curr_conso = ((randgen.rnorm(avg, stdev) / (14.4 / params.interval)) |0)/100; // 14.4 <= 1440 / 100 (1440=nb minutes per day, 100=2digits rounding)
-
+			const avg = subConfig[season][dayOfWeek][dayTime].avg * configClimat.climats[meter.climat][season].RatioAvg * configProfil[meter.profil][dayOfWeek][dayTime].RatioAvg;
+			const stdev = subConfig[season][dayOfWeek][dayTime].stddev * configClimat.climats[meter.climat][season].RatioStddev * configProfil[meter.profil][dayOfWeek][dayTime].RatioStddev;
+			var curr_conso = ((randgen.rnorm(avg, stdev) / (14.4 / params.interval)) |0)/100; // 14.4 <= 1440 / 100 (1440=nb minutes per day, 100=2digits rounding)
+			//calculate conso with average from old + current
+			curr_conso = meter.old > 0 ? curr_conso + meter.old / 2 : curr_conso;
+			//Save old conso for average next value
+			meter.old = curr_conso;
 			//
 			// Update Line
 			meter.line[2] += curr_conso; // conso
@@ -790,7 +808,7 @@ function generateDataLoop(params, configClimat, configConsum, metersTab, configM
 				meter.line[7] = computeTemperature(d, meter.meteoCoefs, configMeteo, hoursSinceMid, month).toFixed(2);
 			// Update Line
 			//
-
+			
 			//
 			// Write line to file
 			const name = fileName.replace('%N', fileNb);
