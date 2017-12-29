@@ -27,7 +27,7 @@ Needs:
 	'-climatFile [.json file]':
 		Specity the path to the file containing climats information
 
-	'-profilFile [.json file]':
+	'-profilsFile [.json file]':
 		Specify the path to the file containing profils information
 
 	'-locationsFile [.json file]':
