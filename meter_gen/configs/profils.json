@@ -1,0 +1,78 @@
+{
+	"1":{
+		"wDay":{
+          "Night":{"RatioAvg":1.1,"RatioStddev":1.1},
+          "Morning":{"RatioAvg":1,"RatioStddev":1},
+          "Day":{"RatioAvg":0.8,"RatioStddev":0.8},
+          "Midday":{"RatioAvg":1.2, "RatioStddev":1.2},
+          "Afternoon":{"RatioAvg":0.8, "RatioStddev":0.8},
+          "Evening":{"RatioAvg":1.2,"RatioStddev":1.2},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        },"wEnd":{
+          "Night":{"RatioAvg":0.7,"RatioStddev":0.7},
+          "Morning":{"RatioAvg":0.4,"RatioStddev":0.4},
+          "Day":{"RatioAvg":0.9,"RatioStddev":0.9},
+          "Midday":{"RatioAvg":1.2, "RatioStddev":1.2},
+          "Afternoon":{"RatioAvg":0.8, "RatioStddev":0.8},
+          "Evening":{"RatioAvg":1.2,"RatioStddev":1.2},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        }
+	},
+	"2":{
+		"wDay":{
+          "Night":{"RatioAvg":0.8,"RatioStddev":0.8},
+          "Morning":{"RatioAvg":1.2,"RatioStddev":1.2},
+          "Day":{"RatioAvg":1.5,"RatioStddev":1.5},
+          "Midday":{"RatioAvg":1.2, "RatioStddev":1.2},
+          "Afternoon":{"RatioAvg":1.5, "RatioStddev":1.5},
+          "Evening":{"RatioAvg":0.8,"RatioStddev":0.8},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        },"wEnd":{
+          "Night":{"RatioAvg":0.8,"RatioStddev":0.8},
+          "Morning":{"RatioAvg":1.2,"RatioStddev":1.2},
+          "Day":{"RatioAvg":1.5,"RatioStddev":1.5},
+          "Midday":{"RatioAvg":1.2, "RatioStddev":1.2},
+          "Afternoon":{"RatioAvg":1.5, "RatioStddev":1.5},
+          "Evening":{"RatioAvg":0.8,"RatioStddev":0.8},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        }
+	},
+	"3":{
+		"wDay":{
+          "Night":{"RatioAvg":1,"RatioStddev":1},
+          "Morning":{"RatioAvg":1.3,"RatioStddev":1.3},
+          "Day":{"RatioAvg":0.9,"RatioStddev":0.9},
+          "Midday":{"RatioAvg":1.2, "RatioStddev":1.2},
+          "Afternoon":{"RatioAvg":0.8, "RatioStddev":0.8},
+          "Evening":{"RatioAvg":1.1,"RatioStddev":1.1},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        },"wEnd":{
+          "Night":{"RatioAvg":1.2,"RatioStddev":1.2},
+          "Morning":{"RatioAvg":1,"RatioStddev":1},
+          "Day":{"RatioAvg":1.1,"RatioStddev":1.1},
+          "Midday":{"RatioAvg":1.2, "RatioStddev":1.2},
+          "Afternoon":{"RatioAvg":0.8, "RatioStddev":0.8},
+          "Evening":{"RatioAvg":1.2,"RatioStddev":1.2},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        }
+	},
+	"4":{
+		"wDay":{
+          "Night":{"RatioAvg":1,"RatioStddev":1},
+          "Morning":{"RatioAvg":1,"RatioStddev":1},
+          "Day":{"RatioAvg":1,"RatioStddev":1},
+          "Midday":{"RatioAvg":1, "RatioStddev":1},
+          "Afternoon":{"RatioAvg":1, "RatioStddev":1},
+          "Evening":{"RatioAvg":1,"RatioStddev":1},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        },"wEnd":{
+          "Night":{"RatioAvg":1,"RatioStddev":1},
+          "Morning":{"RatioAvg":1,"RatioStddev":1},
+          "Day":{"RatioAvg":1,"RatioStddev":1},
+          "Midday":{"RatioAvg":1, "RatioStddev":1},
+          "Afternoon":{"RatioAvg":1, "RatioStddev":1},
+          "Evening":{"RatioAvg":1,"RatioStddev":1},
+          "Endday":{"RatioAvg":1,"RatioStddev":1}
+        }
+	}
+}
