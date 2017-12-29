@@ -10,7 +10,7 @@ The application needs the following paramenters:
 - -interval [integer]
 - -consumptionsFile [.json file]
 - -climatFile [.json file]
-- -profilFile [.json file]
+- -profilsFile [.json file]
 - -locationsFile [.json file]
 
 The application accepts the following options:
@@ -134,7 +134,7 @@ Config file `./config.json`:
 	"climatFile": "./configs/climats.json",
 	"locationsFile": "./configs/locations.json",
 	"meteoFile": "./configs/meteoData.json",
-    "profilFile": "./configs/profils.json",
+    "profilsFile": "./configs/profils.json",
 	"debug":true // print progressing status while generating
 }
 ```
