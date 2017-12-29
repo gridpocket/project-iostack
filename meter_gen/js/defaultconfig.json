@@ -1,5 +1,6 @@
 {
 	"consumptionsFile": "../configs/consumptions.json",
+    "profilsFile": "../configs/profils.json",
 	"climatFile": "../configs/climats.json",
 	"locationsFile": "../configs/locations.json",
 	"meteoFile": "../configs/meteoData.json",
