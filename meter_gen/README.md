@@ -10,6 +10,7 @@ The application needs the following paramenters:
 - -interval [integer]
 - -consumptionsFile [.json file]
 - -climatFile [.json file]
+- -profilFile [.json file]
 - -locationsFile [.json file]
 
 The application accepts the following options:
@@ -60,6 +61,7 @@ configs/
         - iso3.json
         - locations.json
         - meteoData.json
+        - profils.json
 ```
 
 # Working Test
@@ -109,7 +111,7 @@ Note that a `./config.json` file should not exists to get the follwing results
 # 1 data each hour (60minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
 # Generate all into files names {year}-{month}-{day}_{index}.csv ('./2016-01-01_1.csv' to './2017-12-31_42.csv');
 # (with the folder name is the date when you launched meter_gen, here for example: May 5th 2017, 15h20"43)
-sh meter_gen.sh -metersNumber 1000 -firstDate "2016-01-01T00:00" -lastDate "2017-12-31T00:00" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json'
+sh meter_gen.sh -metersNumber 1000 -firstDate "2016-01-01T00:00" -lastDate "2017-12-31T00:00" -interval 60 -consumptionsFile './configs/consumption.json' -climatFile './configs/climats.json' -locationsFile './configs/locations.json' -profilsFile './configs/profils.json'
 
 # Generating for 1000 meters in houses not using electric heater ('gas'), only the meters 250 till 499,
 # 2 data each hour (30minutes interval) since January 1st 2016 00h00 to December 31th 2017 00h00 (but no others data for 31th of December)
@@ -132,6 +134,7 @@ Config file `./config.json`:
 	"climatFile": "./configs/climats.json",
 	"locationsFile": "./configs/locations.json",
 	"meteoFile": "./configs/meteoData.json",
+    "profilFile": "./configs/profils.json",
 	"debug":true // print progressing status while generating
 }
 ```
